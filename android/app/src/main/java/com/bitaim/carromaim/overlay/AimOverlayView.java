@@ -231,7 +231,8 @@ public class AimOverlayView extends View {
         }
         if (s.striker == null || !s.strikerDetected) {   // not your turn → hide auto lines
             if(++missingStrikerFrames>3)resetPlan();
-            else{cancelPlanning();goldSignature=0;goldX=Float.NaN;goldVisible=false;}
+            // 4.10.7: a single missed striker frame keeps the plan and the ★ (they blinked off and the ★ search restarted).
+            else if(missingStrikerFrames>=2){cancelPlanning();goldSignature=0;goldX=Float.NaN;goldVisible=false;}
             manualStriker = null;
             clearSnap();
             this.detected = s;
@@ -544,7 +545,18 @@ public class AimOverlayView extends View {
         return discsSimilar(a,b,.3f);
     }
 
+    // 4.10.7 (user: lines blink): the last frame that had a board and our striker, kept briefly for drawing.
+    private GameState lastGoodState;private long lastGoodMs;
+    private static final long HOLD_LINES_MS=700;
     private void drawAuto(Canvas canvas, GameState s) {
+        long nowMs=android.os.SystemClock.uptimeMillis();
+        boolean good=s!=null&&s.board!=null&&s.striker!=null&&s.strikerDetected;
+        if(good){lastGoodState=s;lastGoodMs=nowMs;}
+        else if(lastGoodState!=null&&nowMs-lastGoodMs<HOLD_LINES_MS&&(s==null||s.board==null||sameDiscs(lastGoodState,s))){
+            // One or two frames without the board or striker (finger, glow, animation): redraw the last good frame's
+            // lines instead of blanking them. Auto play ignores it (same frame id).
+            s=lastGoodState;
+        }
         if (s == null || s.board == null) {
             aimAlignment.update(null,null);
             if(planListener!=null)planListener.onPlan(null,null,Float.NaN,null);
@@ -565,7 +577,7 @@ public class AimOverlayView extends View {
         if (autoState != s) {
             // No plan for this frame yet. Keep the previous lines while the striker is still, and
             // for a short while during a slide (same discs), so the guide never blinks out.
-            boolean recent=plan!=null&&android.os.SystemClock.uptimeMillis()-planAppliedMs<1200&&sameDiscs(plan.state,s);
+            boolean recent=plan!=null&&android.os.SystemClock.uptimeMillis()-planAppliedMs<2000&&sameDiscs(plan.state,s); // 4.10.7: 1.2 s -> 2 s
             provisional=plan!=null&&!stillClose(plan.state,s)&&recent;
             if (plan == null || !stillClose(plan.state, s) && !recent) {
                 aimAlignment.update(null,null);

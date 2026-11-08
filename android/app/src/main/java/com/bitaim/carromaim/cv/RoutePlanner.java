@@ -140,6 +140,8 @@ public final class RoutePlanner {
         return value;
     }
     /** 0 pot tolerating >=1 degree effective, 1 pot tolerating >=0.5, 2 path opener, 3 risky pot, 4 manual cluster guide. */
+    /** Ranking tier (0 best) for display stability checks. */
+    public static int tierOf(ShotPlanner.Shot s){return tier(s);}
     private static int tier(ShotPlanner.Shot s){
         if(s.kind==4)return 4;if(s.kind==5)return 2;
         // Practice log 2026-11-07 21:29-21:33 (all auto): real pots potted 4/5, chain-reaction openers 0/9.
