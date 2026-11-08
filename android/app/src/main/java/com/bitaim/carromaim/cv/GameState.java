@@ -21,6 +21,9 @@ public class GameState {
     public boolean      strikerDetected = false;
     public boolean teamKnown = false;
     public boolean freestyle = false;
+    /** 4.11.0: much less of the board shows than a moment ago (chat panel or a popup over it): no pictures, no shot
+     *  results, no planning from this frame. */
+    public boolean covered = false;
     /** A validated assignment is visible or retained for the current board session. */
     public boolean assignedColours = false;
     public boolean queenRequired = false;

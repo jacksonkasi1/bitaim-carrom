@@ -90,11 +90,27 @@ public class ShotLoggerRegression {
                 check("striker-pocketed".equals(log.consumeIncident()),"Striker pocketed (foul) raises an incident with pictures");
             }
         }
+        // 4.11.0 (live 19:27:18): auto shot whose hold showed no aim dots is still recorded at release.
+        {GameState plain=base();plain.strikerDetected=true;plain.coins.addAll(s.coins);
+         int n=lines.size();
+         for(long t=300000;t<=300300;t+=100)log.feed(plain,t);
+         log.markAutoShot(.2f,.3f,-.954f,"{\"label\":\"Open paths\",\"kind\":5}");log.consumeSaveRequest();
+         for(long t=300400;t<=301000;t+=150)log.feed(plain,t);   // held pull: striker on the baseline, no dots
+         log.feed(moving,301100);log.feed(moving,301700);log.feed(after,302400);log.feed(after,302800);log.feed(after,303200);
+         check(lines.size()==n+1&&lines.get(n).contains("\"label\":\"Open paths\""),"auto shot without aim dots is recorded");
+         log.consumeSaveRequest();log.consumeIncident();
+         // Auto marker never released (gesture lost): a later hand shot is not written under the stale auto route.
+         log.markAutoShot(.2f,.3f,-.954f,"{\"label\":\"Stale route\",\"kind\":0}");log.consumeSaveRequest();
+         log.feed(null,310000);                                   // board hidden (chat keyboard) for a long time
+         for(long t=330000;t<=330300;t+=100)log.feed(s,t);       // the player's own aimed shot, 20 s later
+         log.feed(moving,330400);log.feed(moving,331000);log.feed(missFrame,331700);log.feed(missFrame,332000);log.feed(missFrame,332400);
+         check(lines.size()==n+2&&!lines.get(n+1).contains("Stale route"),"stale auto marker dropped before the next hand shot");
+         log.consumeSaveRequest();log.consumeIncident();log.consumeNewManualRecord();}
         ShotLogCalibrator.Shot shot=ShotLogCalibrator.parse(lines.get(0));
         check(shot.before.coins.size()==2&&Math.abs(shot.ux-0.3)<1e-3,"Record round-trips board, discs and aim");
         check(shot.realPotted==2-after.coins.size(),"Potted count recorded");
         ShotLogCalibrator.Fit f=ShotLogCalibrator.fit(Collections.singletonList(shot));
         check(Math.abs(f.speeds[0]-truthSpeed)<=.21,"Calibrator recovers launch speed ("+f.speeds[0]+" vs "+truthSpeed+")");
-        System.out.printf(Locale.US,"PASS: one record per shot, no record without release, finger occlusion ignored, downward guide kept, auto debug pictures/route record, followed-line incident, hand-shot track (potted vs moved, resting striker, striker-pocketed foul), round-trip parse, speed %.1f (truth %.1f), rail %.2f, potted %d%n",f.speeds[0],truthSpeed,f.wall,shot.realPotted);
+        System.out.printf(Locale.US,"PASS: one record per shot, no record without release, finger occlusion ignored, downward guide kept, auto debug pictures/route record, followed-line incident, hand-shot track (potted vs moved, resting striker, striker-pocketed foul), dot-less auto shot recorded, stale auto marker dropped, round-trip parse, speed %.1f (truth %.1f), rail %.2f, potted %d%n",f.speeds[0],truthSpeed,f.wall,shot.realPotted);
     }
 }

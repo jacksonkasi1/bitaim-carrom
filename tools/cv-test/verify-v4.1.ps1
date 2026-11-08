@@ -32,6 +32,8 @@ if($LASTEXITCODE -ne 0){throw 'TwoBluesRegression failed'}
 if($LASTEXITCODE -ne 0){throw 'BackwardFoulRegression failed'}
 & "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp LuckyShotRegression "$root/test-results/live-lucky-shot-20261108.jpg"
 if($LASTEXITCODE -ne 0){throw 'LuckyShotRegression failed'}
+& "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp CoveredBoardRegression "$root/test-results/practice-board-clean.png"
+if($LASTEXITCODE -ne 0){throw 'CoveredBoardRegression failed'}
 & "$jdk/bin/java.exe" -cp $cp ShotLoggerRegression
 if($LASTEXITCODE -ne 0){throw 'Shot logger regression failed'}
 & "$jdk/bin/java.exe" -cp $cp AutoPlayRegression

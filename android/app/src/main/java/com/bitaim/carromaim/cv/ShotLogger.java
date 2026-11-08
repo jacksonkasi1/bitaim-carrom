@@ -100,7 +100,13 @@ public final class ShotLogger {
             cleanCandidate=copy(s);
         }
         if(!waiting){
+            // 4.11.0 (live 19:27:18): an auto shot that is never seen leaving the baseline must not stay pending: 163 s
+            // later the player's own shot was written under the stale auto route. Drop the auto marker after GIVE_UP_MS.
+            if(shotId!=null&&autoShotAt>=0&&now-autoShotAt>GIVE_UP_MS){reset();aimed=null;}
             if(s.strikerDetected&&s.aimGuideDots>=6&&!Float.isNaN(s.aimGuideX)){aimed=copy(s);aimedAt=now;lastWasAimed=true;aimedSuggestion=suggestion;aimedSuggestionLabel=suggestionLabel;return;}
+            // An auto shot is held by BitAim itself: its release is the striker leaving the baseline, even when the game's
+            // aim dots were not read during the hold (that shot: "dots 0", so no aimed board and no record at all).
+            if(shotId!=null&&s.strikerDetected&&(aimed==null||now-aimedAt>200)){aimed=copy(s);aimedAt=now;return;}
             if(aimed==null)return;
             if(now-aimedAt>RELEASE_WINDOW_MS){aimed=null;autoPull=Float.NaN;return;} // aim dropped without a shot
             boolean released=!s.strikerDetected||Math.hypot(s.striker.pos.x-aimed.striker.pos.x,s.striker.pos.y-aimed.striker.pos.y)>aimed.striker.radius;

@@ -242,6 +242,7 @@ public class BoardDetector {
 
         // ── Build result (scaled back to source pixels) ─────────────────────
         GameState st = new GameState();
+        st.covered = covered(System.currentTimeMillis());
         st.frameId=frameCounter.incrementAndGet();
         st.board = new RectF(b.x / scale, b.y / scale, (b.x + b.width) / scale, (b.y + b.height) / scale);
         float sbw = st.board.width();
@@ -323,9 +324,24 @@ public class BoardDetector {
         return out;
     }
 
+    /** Share of the board rectangle that shows light wood (raw mask), last frame. */
+    private float woodFraction;
+    /** 4.11.0: recent clean-board wood share. Board skins differ (0.6-0.85), so "covered" is judged against the same
+     *  board a moment earlier: the in-game chat panel over the board (live 19:28-19:30) cut it by about half. */
+    private float woodRef = -1; private long woodRefAt;
+    static final float COVERED_SHARE = .80f;
+    private boolean covered(long now) {
+        if (woodRef < 0 || now - woodRefAt > 120_000) { woodRef = woodFraction; woodRefAt = now; return false; }
+        if (woodFraction >= woodRef * COVERED_SHARE) {
+            woodRef = Math.max(woodFraction, woodRef * .98f + woodFraction * .02f); woodRefAt = now; return false;
+        }
+        return true;
+    }
+
     private Rect findSurface(int procH) {
         Mat mask = new Mat();
         Core.inRange(hsv, new Scalar(6, 55, 170), new Scalar(24, 165, 255), mask);
+        Mat raw = mask.clone();
         Mat k = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(25, 25));
         Imgproc.morphologyEx(mask, mask, Imgproc.MORPH_CLOSE, k);
         List<MatOfPoint> contours = new ArrayList<>();
@@ -337,7 +353,8 @@ public class BoardDetector {
             if (a > best) { best = a; r = Imgproc.boundingRect(c); }
             c.release();
         }
-        mask.release(); k.release(); hier.release();
+        woodFraction = r == null ? 0 : Core.countNonZero(raw.submat(r)) / (float) Math.max(1, r.area());
+        raw.release(); mask.release(); k.release(); hier.release();
         if (r == null || best < PROC_WIDTH * procH * 0.08) return null;
         // A carrom board is square — reject odd shapes (menus, banners)
         float ratio = r.width / (float) r.height;

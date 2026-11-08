@@ -69,6 +69,7 @@ public class ScreenCaptureService extends Service {
     private HandlerThread   workerThread;
     private Handler         workerHandler;
     private final BoardDetector detector = new BoardDetector();
+    private boolean loggedCovered, coveredFrame;
     private final com.bitaim.carromaim.cv.LuckyShot.Planner luckyPlanner = new com.bitaim.carromaim.cv.LuckyShot.Planner();
     /** Local-only calibration log: one JSON line per real shot in this app's own files folder. */
     private final com.bitaim.carromaim.cv.ShotLogger shotLogger = new com.bitaim.carromaim.cv.ShotLogger(this::appendShotLine);
@@ -342,9 +343,13 @@ public class ScreenCaptureService extends Service {
                     }
                 }
             }
+            // 4.11.0: a covered board (chat panel over it, live 19:28-19:30) is treated as no board for recording and
+            // planning: the half-hidden discs gave a false "8 potted" result and a debug picture showed the chat.
+            if (state != null && state.covered) { if (debugOn && !loggedCovered) { loggedCovered = true; Log.i(TAG, "board covered, not recording"); } state = null; coveredFrame = true; }
+            else { loggedCovered = false; coveredFrame = false; }
             lastBoardSeen = state != null;
             recordingLive = debugOn && state != null;
-            if (debugOn) MatchFolder.observe(state == null ? -1 : state.coins.size(), state != null && state.openingCluster, now);
+            if (debugOn && !coveredFrame) MatchFolder.observe(state == null ? -1 : state.coins.size(), state != null && state.openingCluster, now);
             lastLocalTurn = state != null && state.strikerDetected;
             if (!running) return;
             // Scale captured-coords → real screen-coords
