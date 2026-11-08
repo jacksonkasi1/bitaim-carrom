@@ -448,7 +448,15 @@ public class FloatingOverlayService extends Service {
     };
     private void setupPcLink(){
         com.bitaim.carromaim.capture.PcLink.setListener(new com.bitaim.carromaim.capture.PcLink.Listener(){
-            @Override public void onStatus(String text){mainHandler.post(()->{updateColourLockLabel();if(aimOverlayView!=null)aimOverlayView.setAutoStatus("PC • "+text);});}
+            @Override public void onStatus(String text){mainHandler.post(()->{updateColourLockLabel();if(aimOverlayView!=null){aimOverlayView.setRemoteMode(com.bitaim.carromaim.capture.PcLink.connected());aimOverlayView.setAutoStatus("PC • "+text);}});}
+            @Override public void onRoute(org.json.JSONObject r){
+                float[] st=arr(r.optJSONArray("striker"));float[] pk=arr(r.optJSONArray("pocket"));
+                org.json.JSONArray lg=r.optJSONArray("legs");float[][] legs=null;
+                if(lg!=null){legs=new float[lg.length()][];for(int i=0;i<lg.length();i++)legs[i]=arr(lg.optJSONArray(i));}
+                final float[][] fl=legs;String label=r.optString("label");
+                mainHandler.post(()->{if(aimOverlayView!=null)aimOverlayView.setRemoteRoute(st,fl,pk,label);});
+            }
+            private float[] arr(org.json.JSONArray a){if(a==null)return null;float[] f=new float[a.length()];for(int i=0;i<f.length;i++)f[i]=(float)a.optDouble(i);return f;}
             @Override public void onAction(org.json.JSONObject a){
                 final long id=a.optLong("id");
                 AutoPlayController.Action action=AutoPlayController.Action.remote(a.optBoolean("move"),(float)a.optDouble("x1"),(float)a.optDouble("y1"),

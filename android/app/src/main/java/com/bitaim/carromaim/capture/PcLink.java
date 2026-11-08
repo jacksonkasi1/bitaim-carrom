@@ -17,7 +17,7 @@ import org.json.JSONObject;
 public final class PcLink {
     private PcLink(){}
     public static final int PORT=8765;
-    public interface Listener{void onAction(JSONObject a);void onStatus(String text);}
+    public interface Listener{void onAction(JSONObject a);void onStatus(String text);default void onRoute(JSONObject r){}}
     private static volatile boolean enabled,connected;
     private static volatile Listener listener;
     private static volatile float[] guide;private static volatile long guideAt;
@@ -80,7 +80,7 @@ public final class PcLink {
                     guideAt=android.os.SystemClock.uptimeMillis();
                 }else{
                     Listener l=listener;if(l==null)continue;
-                    if("action".equals(type))l.onAction(o);else if("status".equals(type))l.onStatus(o.optString("text"));
+                    if("action".equals(type))l.onAction(o);else if("status".equals(type))l.onStatus(o.optString("text"));else if("route".equals(type))l.onRoute(o);
                 }
             }
         }catch(Throwable ignored){}

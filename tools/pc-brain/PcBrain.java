@@ -17,9 +17,12 @@ import java.util.regex.*;
  * Usage: java PcBrain [outDir]
  */
 public class PcBrain {
-    static final int PORT=8765;
+    static final int PORT=Integer.getInteger("port",8765);
     public static void main(String[] args)throws Exception{
         nu.pattern.OpenCV.loadLocally();
+        // Deeper search than the phone can afford (same code, larger limits).
+        RoutePlanner.CHANCE_SAMPLES=200;RoutePlanner.GOLD_STEPS=40;RoutePlanner.GOLD_SWEEP_EVERY=1;RoutePlanner.GOLD_VALIDATE=24;
+        SweepPlanner.BUDGET_SCALE=3;
         File root=new File(args.length>0?args[0]:"recordings");
         try(ServerSocket server=new ServerSocket(PORT,1,InetAddress.getByName("127.0.0.1"))){
             log("PC brain listening on 127.0.0.1:"+PORT+" (adb reverse tcp:"+PORT+" tcp:"+PORT+")");
@@ -97,7 +100,7 @@ public class PcBrain {
             detectMs=detectMs*.9+(System.nanoTime()-t0)/1e6*.1;
             if(s!=null){
                 scale(s,sw/w,sh/h);s.frameId=id;
-                baseline.apply(s);DiscSeparation.apply(s);
+                steady(s);baseline.apply(s);DiscSeparation.apply(s);prev=s;
                 if(s.aimGuideDots>0&&!Float.isNaN(s.aimGuideX)){
                     float[] d=AimGuideDetector.shotDirection(s.aimGuideX,s.aimGuideY);
                     send(String.format(Locale.US,"{\"type\":\"guide\",\"ux\":%.5f,\"uy\":%.5f,\"dots\":%d,\"sx\":%s,\"sy\":%s}",d[0],d[1],s.aimGuideDots,
@@ -107,6 +110,7 @@ public class PcBrain {
             try{logger.feed(s,now);}catch(Throwable ignored){}
             if(s!=null&&s.strikerDetected&&s.teamKnown)maybePlan(s);
             Plan p=plan;
+            if(p!=sentPlan){sentPlan=p;sendRoute(p.goldRoute!=null&&p.goldReady?p.goldRoute:p.route);}
             auto.setGoldReady(p.goldReady&&p.planned!=null);auto.setGoldRoute(p.goldRoute);
             AutoPlayController.Action a=auto.update(s,p.route,p.goldX,now,p.planned);
             String st=auto.status();
@@ -122,6 +126,38 @@ public class PcBrain {
             }
             fpsCount++;
             if(now-lastFpsAt>=5000){log(String.format(Locale.US,"%.1f fps, detect %.0f ms, plan %.0f ms, %s",fpsCount*1000.0/(now-lastFpsAt),detectMs,planMs,st));fpsCount=0;lastFpsAt=now;}
+        }
+        GameState prev;Plan sentPlan;
+        /** The chosen route as points for the phone overlay (striker path, coin legs, pocket, label with chance). */
+        void sendRoute(ShotPlanner.Shot r){
+            if(r==null||r.strikerPath.isEmpty()){send("{\"type\":\"route\",\"label\":\"\"}");return;}
+            StringBuilder b=new StringBuilder("{\"type\":\"route\",\"striker\":[");
+            for(int i=0;i<r.strikerPath.size();i++){if(i>0)b.append(',');b.append(String.format(Locale.US,"%.1f,%.1f",r.strikerPath.get(i).x,r.strikerPath.get(i).y));}
+            b.append("],\"legs\":[");
+            for(int i=0;i<r.chain.size()&&i<r.coinEndpoints.size();i++){if(i>0)b.append(',');b.append(String.format(Locale.US,"[%.1f,%.1f,%.1f,%.1f]",r.chain.get(i).pos.x,r.chain.get(i).pos.y,r.coinEndpoints.get(i).x,r.coinEndpoints.get(i).y));}
+            if(r.targetBounce!=null&&r.pocket!=null)b.append(String.format(Locale.US,",[%.1f,%.1f,%.1f,%.1f]",r.targetBounce.x,r.targetBounce.y,r.pocket.x,r.pocket.y));
+            b.append(']');
+            if(r.pocket!=null)b.append(String.format(Locale.US,",\"pocket\":[%.1f,%.1f]",r.pocket.x,r.pocket.y));
+            String label=RoutePlanner.label(r)+(Float.isNaN(r.chancePercent)?"":" • ~"+Math.round(r.chancePercent)+"%");
+            b.append(",\"label\":\"").append(label.replace("\"","'")).append("\"}");
+            send(b.toString());
+        }
+        /** Same frame-to-frame steadying as the phone overlay: an unchanged board edge, striker and discs keep their
+         *  previous exact positions, so detection jitter does not look like movement (no endless re-planning). */
+        void steady(GameState s){
+            GameState p=prev;if(p==null||p.board==null||s.board==null)return;
+            float w=s.board.width(),noise=w*.025f;
+            if(Math.abs(s.board.width()-p.board.width())>p.board.width()*.25f)return;
+            if(Math.abs(s.board.left-p.board.left)<noise&&Math.abs(s.board.top-p.board.top)<noise&&Math.abs(s.board.right-p.board.right)<noise&&Math.abs(s.board.bottom-p.board.bottom)<noise)
+                s.board.set(p.board.left,p.board.top,p.board.right,p.board.bottom);
+            if(s.striker!=null&&p.striker!=null&&s.strikerDetected&&p.strikerDetected){
+                float d=(float)Math.hypot(s.striker.pos.x-p.striker.pos.x,s.striker.pos.y-p.striker.pos.y);
+                if(d<s.striker.radius*.12f){s.striker.pos.set(p.striker.pos.x,p.striker.pos.y);s.striker.radius=p.striker.radius;}
+            }
+            for(Coin c:s.coins){Coin best=null;float bd=c.radius*.25f;
+                for(Coin o:p.coins){float d=(float)Math.hypot(c.pos.x-o.pos.x,c.pos.y-o.pos.y);if(d<bd&&c.targetEligible==o.targetEligible){bd=d;best=o;}}
+                if(best!=null){c.pos.set(best.pos.x,best.pos.y);c.radius=best.radius;}}
+            if(s.pockets.size()==p.pockets.size())for(int i=0;i<s.pockets.size();i++){android.graphics.PointF a=s.pockets.get(i),b=p.pockets.get(i);if(Math.hypot(a.x-b.x,a.y-b.y)<w*.01f)a.set(b.x,b.y);}
         }
         void maybePlan(GameState s){
             long sig=PhysicsVerifier.signature(s)*31+Math.round(s.striker.pos.x/4f);

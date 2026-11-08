@@ -8,7 +8,7 @@ import java.util.*;
  *  with auto play armed, and prints every reply. Usage: java PhoneSim frame1.jpg [frame2.jpg ...] */
 public class PhoneSim {
     public static void main(String[] a)throws Exception{
-        try(Socket s=new Socket("127.0.0.1",8765)){
+        try(Socket s=new Socket("127.0.0.1",Integer.getInteger("port",8765))){
             s.setTcpNoDelay(true);
             DataOutputStream out=new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
             BufferedReader in=new BufferedReader(new InputStreamReader(s.getInputStream(),StandardCharsets.UTF_8));

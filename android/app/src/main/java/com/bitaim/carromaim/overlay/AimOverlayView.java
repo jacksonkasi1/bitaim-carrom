@@ -184,6 +184,23 @@ public class AimOverlayView extends View {
     private volatile ShotPlanner.Shot firingRoute;
     /** The route auto play is firing (null when none); drawn instead of the current-spot suggestion. */
     public void setFiringRoute(ShotPlanner.Shot r){firingRoute=r;postInvalidate();}
+    // ── PC brain route (drawn without the phone's own detection, which pauses in PC mode) ──
+    private volatile float[] remoteStriker;private volatile float[][] remoteLegs;private volatile float[] remotePocket;private volatile String remoteLabel;
+    private Paint remotePaint;
+    private volatile boolean remoteMode;
+    /** PC brain connected: draw the PC's route (the phone's own detection is paused). */
+    public void setRemoteMode(boolean on){if(remoteMode!=on){remoteMode=on;if(!on){remoteStriker=null;remoteLegs=null;remotePocket=null;remoteLabel=null;}postInvalidate();}}
+    public void setRemoteRoute(float[] striker,float[][] legs,float[] pocket,String label){remoteStriker=striker;remoteLegs=legs;remotePocket=pocket;remoteLabel=label;postInvalidate();}
+    private void drawRemote(Canvas canvas){
+        float[] st=remoteStriker;float[][] legs=remoteLegs;float[] pk=remotePocket;
+        if(st==null&&legs==null)return;
+        if(remotePaint==null){remotePaint=new Paint(Paint.ANTI_ALIAS_FLAG);remotePaint.setStyle(Paint.Style.STROKE);remotePaint.setStrokeCap(Paint.Cap.ROUND);}
+        remotePaint.setStrokeWidth(3*dp);
+        if(st!=null){remotePaint.setColor(0xE600E5FF);for(int i=0;i+3<st.length;i+=2)canvas.drawLine(st[i],st[i+1],st[i+2],st[i+3],remotePaint);}
+        if(legs!=null){remotePaint.setColor(0xE622FF6E);for(float[] l:legs)if(l!=null&&l.length>=4)canvas.drawLine(l[0],l[1],l[2],l[3],remotePaint);}
+        if(pk!=null){remotePaint.setColor(0xE622FF6E);canvas.drawCircle(pk[0],pk[1],18*dp,remotePaint);}
+        String lb=remoteLabel;if(lb!=null&&!lb.isEmpty())canvas.drawText("PC • "+lb,24*dp,getHeight()-150*dp,textPaint);
+    }
     public void setAutoStatus(String status){if(status!=null&&!status.equals(autoStatus)){autoStatus=status;postInvalidate();}}
     public void setPlayMode(boolean on) { playMode = on; postInvalidate(); }
 
@@ -406,6 +423,7 @@ public class AimOverlayView extends View {
         super.onDraw(canvas);
         try {
             if(autoPlayArmed)canvas.drawText("AUTO • "+(autoStatus.isEmpty()?"armed":autoStatus)+" • tap ★ to stop",24*dp,65*dp,textPaint);
+            if(remoteMode){drawRemote(canvas);return;}
             if(autoMode){drawAuto(canvas,detected);return;}
             drawHint(canvas,detected==null?missingBoardHint()
                     :!detected.teamKnown?"Team badges hidden — tap icon to return to play":pickHint);

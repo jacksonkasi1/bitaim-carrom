@@ -18,7 +18,11 @@ public final class RoutePlanner {
     private static final float PRODUCTIVE_MIN_MARGIN=1f;
     /** Pro style: rank by "pot now + position for the next shot" (cluster breaks, rail pots) instead of easiest aim. */
     public static volatile boolean proStyle=false;
-    static final int CHANCE_SAMPLES=32;
+    /** Noisy trials per realistic-chance estimate (phone 32; the PC brain raises it). */
+    public static volatile int CHANCE_SAMPLES=32;
+    /** ★ search: baseline samples (phone 20 intervals), aim sweep every Nth sample (phone 4), candidates validated (phone 12).
+     *  The PC brain raises these for a finer, deeper search; the phone keeps its time budget. */
+    public static volatile int GOLD_STEPS=20,GOLD_SWEEP_EVERY=4,GOLD_VALIDATE=12;
     /** The striker centre can only reach this fraction of the board width from either side. Practice test drags
      *  2026-11-07 23:05: a slow drag puts the slider knob (directly under the striker) at its stop at ~0.24 of the
      *  board; fast 450 ms drags lagged and stopped near 0.29, which is why recorded slides seemed capped there. */
@@ -264,8 +268,9 @@ public final class RoutePlanner {
         try{
             // 21 baseline samples, each on its own copy of the board (the copy carries that striker x).
             final float[] reach=reachable(s);
-            for(int i=0;i<=20;i++){
-                final int idx=i;final float x=s.board.left+s.board.width()*(REACH_MIN+(1-2*REACH_MIN)*i/20f);
+            final int steps=Math.max(4,GOLD_STEPS),sweepEvery=Math.max(1,GOLD_SWEEP_EVERY);
+            for(int i=0;i<=steps;i++){
+                final int idx=i;final float x=s.board.left+s.board.width()*(REACH_MIN+(1-2*REACH_MIN)*i/(float)steps);
                 if(x<reach[0]||x>reach[1])continue; // the striker cannot get there
                 final Coin tgt=target;
                 sampled.add(GOLD_POOL.submit(()->{
@@ -275,9 +280,9 @@ public final class RoutePlanner {
                     List<ShotPlanner.Shot> all=candidates(c,local);
                     // 4.8.8: the aim sweep joins every other spot (not only empty ones): it finds easy direct pots the
                     // ghost-ball builder misses, and the ★ search preferred a weaker cushion pot without it (06:41:44).
-                    if(idx%4==0){List<ShotPlanner.Shot> sw=SweepPlanner.candidates(c,local,true,2);if(!sw.isEmpty()){all=new ArrayList<>(all);all.addAll(sw);Collections.sort(all,(p,q)->Float.compare(q.score,p.score));}}
+                    if(idx%sweepEvery==0){List<ShotPlanner.Shot> sw=SweepPlanner.candidates(c,local,true,2);if(!sw.isEmpty()){all=new ArrayList<>(all);all.addAll(sw);Collections.sort(all,(p,q)->Float.compare(q.score,p.score));}}
                     if(all.isEmpty())all=ClusterPlanner.candidates(c,local);
-                    if(all.isEmpty()&&idx%4==0)all=OpeningPlanner.candidates(c,local,true); // blocked board: still suggest where an opener exists
+                    if(all.isEmpty()&&idx%sweepEvery==0)all=OpeningPlanner.candidates(c,local,true); // blocked board: still suggest where an opener exists
                     List<GoldCandidate> out=new ArrayList<>();
                     for(int k=0;k<Math.min(4,all.size());k++)out.add(new GoldCandidate(x,all.get(k),c));
                     return out;
@@ -287,7 +292,7 @@ public final class RoutePlanner {
             Collections.sort(options,(a,b)->Float.compare(b.shot.score,a.shot.score));
             // The bench showed the top-scoring spot can tolerate 0.25 degrees while another tolerates 8:
             // validate a wider set in parallel, then rank validated spots by the production comparator.
-            List<GoldCandidate> top=options.subList(0,Math.min(12,options.size()));
+            List<GoldCandidate> top=options.subList(0,Math.min(Math.max(4,GOLD_VALIDATE),options.size()));
             // Practice 23:21-23:25: ★ shots with 0.0° tolerance were fired because validated ★ candidates had no chance
             // estimate; each validated candidate now gets the realistic chance (in parallel) before ranking.
             for(GoldCandidate c:top)checks.add(GOLD_POOL.submit(()->{
