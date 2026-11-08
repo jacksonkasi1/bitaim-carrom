@@ -22,9 +22,9 @@ public final class ShotLogger {
     /** Motion track of an auto shot (4.8.6): every detected frame for TRACK_MS after release, as
      *  [ms since release, striker x, y (or -1), then x,y,colour per disc]. The fit of friction, launch speed per pull
      *  and rail loss needs positions over time; start and settled pictures cannot separate power from drag. */
-    public static final long TRACK_MS=4000;private StringBuilder track;private int trackFrames;
+    public static final long TRACK_MS=4000;private StringBuilder track;private int trackFrames;private long trackAt=-1;
     /** True while an auto shot is being tracked: the capture service then detects every frame it can. */
-    public synchronized boolean tracking(){return shotId!=null&&track!=null&&autoShotAt>=0&&trackFrames<160;}
+    public synchronized boolean tracking(){return track!=null&&trackAt>=0&&trackFrames<160;}
     private float targetX=Float.NaN,targetY,pocketX,pocketY;
     /** Current on-screen suggestion (launch direction, target, pocket, label), refreshed by the overlay. */
     private volatile float[] suggestion;private volatile String suggestionLabel;
@@ -76,16 +76,18 @@ public final class ShotLogger {
         autoPull=pull;autoUx=ux;autoUy=uy;autoInfo=info;autoShotAt=-1;motionIndex=0;
     }
     public synchronized void feed(GameState s,long now){
-        if(shotId!=null){
-            if(autoShotAt<0){autoShotAt=now;track=new StringBuilder("[");trackFrames=0;}
-            if(track!=null&&now-autoShotAt<=TRACK_MS&&trackFrames<160&&s!=null&&s.board!=null){
+        if(shotId!=null&&autoShotAt<0){autoShotAt=now;track=new StringBuilder("[");trackFrames=0;trackAt=now;}
+        // 4.10.9: hand-played shots are tracked too (from the release), so the result can follow moved coins and
+        // tell a potted coin from one knocked across the board, and find the resting striker.
+        if(track!=null&&trackAt>=0){
+            if(now-trackAt<=TRACK_MS&&trackFrames<160&&s!=null&&s.board!=null){
                 if(trackFrames>0)track.append(',');
-                track.append('[').append(now-autoShotAt).append(',');
+                track.append('[').append(now-trackAt).append(',');
                 if(s.strikerDetected&&s.striker!=null)track.append(Math.round(s.striker.pos.x)).append(',').append(Math.round(s.striker.pos.y));else track.append("-1,-1");
                 for(Coin c:s.coins)track.append(',').append(Math.round(c.pos.x)).append(',').append(Math.round(c.pos.y)).append(',').append(c.color);
                 track.append(']');trackFrames++;
             }
-            else if(saveRequest==null&&motionIndex<BURST_MS.length&&now-autoShotAt>=BURST_MS[motionIndex])saveRequest=shotId+"_motion"+(++motionIndex);
+            else if(shotId!=null&&saveRequest==null&&motionIndex<BURST_MS.length&&now-autoShotAt>=BURST_MS[motionIndex])saveRequest=shotId+"_motion"+(++motionIndex);
         }
         lastWasAimed=false;
         if(s==null||s.board==null||s.striker==null)return;
@@ -102,7 +104,14 @@ public final class ShotLogger {
             if(aimed==null)return;
             if(now-aimedAt>RELEASE_WINDOW_MS){aimed=null;autoPull=Float.NaN;return;} // aim dropped without a shot
             boolean released=!s.strikerDetected||Math.hypot(s.striker.pos.x-aimed.striker.pos.x,s.striker.pos.y-aimed.striker.pos.y)>aimed.striker.radius;
-            if(released){waiting=true;shotAt=now;lastSeen=null;}
+            if(released){waiting=true;shotAt=now;lastSeen=null;
+                if(shotId==null){track=new StringBuilder("[");trackFrames=0;trackAt=now;
+                    // first entries: the aimed board (negative time) and this release frame
+                    track.append('[').append(aimedAt-now).append(',').append(Math.round(aimed.striker.pos.x)).append(',').append(Math.round(aimed.striker.pos.y));
+                    for(Coin c:aimed.coins)track.append(',').append(Math.round(c.pos.x)).append(',').append(Math.round(c.pos.y)).append(',').append(c.color);
+                    track.append("],[0,-1,-1");
+                    for(Coin c:s.coins)track.append(',').append(Math.round(c.pos.x)).append(',').append(Math.round(c.pos.y)).append(',').append(c.color);
+                    track.append(']');trackFrames=2;}}
             return;
         }
         if(now-shotAt>GIVE_UP_MS){reset();return;}
@@ -112,6 +121,7 @@ public final class ShotLogger {
             if(s.strikerDetected&&s.aimGuideDots>=6&&!Float.isNaN(s.aimGuideX)
                     &&Math.hypot(s.striker.pos.x-aimed.striker.pos.x,s.striker.pos.y-aimed.striker.pos.y)<aimed.striker.radius*.5f){
                 waiting=false;aimed=copy(s);aimedAt=now;
+                if(shotId==null){track=null;trackFrames=0;trackAt=-1;}
             }
             return;
         }
@@ -126,7 +136,7 @@ public final class ShotLogger {
         if(!ownKeys.isEmpty()&&c.appearanceKey!=TargetColourLock.AUTO){for(int k:ownKeys)if(TargetColourLock.matches(k,c.appearanceKey))return true;return false;}
         return ownColours.contains(c.color);
     }
-    private void reset(){waiting=false;aimed=null;lastSeen=null;autoPull=Float.NaN;autoUx=autoUy=Float.NaN;autoInfo=null;shotId=null;autoShotAt=-1;track=null;trackFrames=0;motionIndex=0;targetX=Float.NaN;}
+    private void reset(){waiting=false;aimed=null;lastSeen=null;autoPull=Float.NaN;autoUx=autoUy=Float.NaN;autoInfo=null;shotId=null;autoShotAt=-1;track=null;trackFrames=0;trackAt=-1;motionIndex=0;targetX=Float.NaN;}
     private void emit(GameState before,GameState after,long now){
         StringBuilder b=new StringBuilder(512);
         b.append(String.format(Locale.US,"{\"t\":%d,\"board\":[%.1f,%.1f,%.1f,%.1f],\"striker\":[%.1f,%.1f,%.1f],\"aim\":[%.4f,%.4f],\"dots\":%d,\"autoPull\":%s,\"autoAim\":%s,\"key\":%d,",
@@ -231,28 +241,82 @@ public final class ShotLogger {
             for(int i=0;i<t.length();i++){char ch=t.charAt(i);if(ch=='['){depth++;if(depth==2)start=i+1;}else if(ch==']'){if(depth==2){String[] p=t.substring(start,i).split(",");double[] v=new double[p.length];for(int k=0;k<p.length;k++)v[k]=Double.parseDouble(p[k]);frames.add(v);}depth--;}}
         }
         float w=before.board.width();
-        StringBuilder g=new StringBuilder("[");int own=0,other=0;boolean queen=false;
+        boolean tracked=frames.size()>=3;
+        // 4.10.9: follow the striker itself. After the release it is no longer detected as the striker but as a disc
+        // of any colour. Start at the baseline spot, take the disc nearest to where it should be (own speed), and
+        // see where it ends: on an after disc (resting), back on the baseline, or gone near a pocket (pocketed = foul).
+        String striker="unknown";float sx=Float.NaN,sy=Float.NaN;int strikerDisc=-1;
+        if(tracked&&before.striker!=null){
+            double x=before.striker.pos.x,y=before.striker.pos.y,prevT=Double.NaN,vx=Double.NaN,vy=0;boolean started=false,back=false;
+            for(double[] f:frames){
+                double dt=Double.isNaN(prevT)?0:Math.max(0,f[0]-prevT)/1000;prevT=f[0];
+                if(f[1]>=0){if(started&&f[0]>0)back=true;continue;}
+                double px=x,py=y,bd=w*Math.max(.12,Math.min(.4,2.4*Math.max(dt,.1)));
+                if(!Double.isNaN(vx)){px=x+vx*dt;py=y+vy*dt;bd=w*.10+.5*Math.hypot(vx,vy)*dt;}
+                double nx=Double.NaN,ny=0;
+                for(int k=3;k+2<f.length;k+=3){
+                    // a disc still sitting where a before disc was is that disc, not the striker
+                    boolean old=false;if(!started)for(Coin c:before.coins)if(Math.hypot(f[k]-c.pos.x,f[k+1]-c.pos.y)<c.radius*.6f){old=true;break;}
+                    if(old)continue;
+                    double d=Math.hypot(f[k]-px,f[k+1]-py);if(d<bd){bd=d;nx=f[k];ny=f[k+1];}
+                }
+                if(Double.isNaN(nx))continue;
+                if(dt>0){vx=(nx-x)/dt;vy=(ny-y)/dt;}
+                x=nx;y=ny;started=true;
+            }
+            if(started){
+                for(int k=0;k<after.coins.size();k++){Coin d=after.coins.get(k);if(Math.hypot(d.pos.x-x,d.pos.y-y)<d.radius*1.6f){strikerDisc=k;break;}}
+                                if(strikerDisc>=0){striker="resting";sx=after.coins.get(strikerDisc).pos.x;sy=after.coins.get(strikerDisc).pos.y;}
+                else if(back||after.strikerDetected)striker="baseline";
+                // Pocketed only when it vanished while still moving toward the pocket next to it; a striker that stopped
+                // and then disappeared was handed to the next player (the game moves it to their baseline).
+                else{
+                    boolean heading=false;
+                    if(!Double.isNaN(vx)&&Math.hypot(vx,vy)>w*.3)for(android.graphics.PointF p:before.pockets)
+                        if(Math.hypot(p.x-x,p.y-y)<w*.12&&((p.x-x)*vx+(p.y-y)*vy)>0)heading=true;
+                    striker=heading?"pocketed":"gone";
+                }
+            }
+        }
+        // Counts per colour (a coin knocked across the board keeps its colour count): potted = before - after,
+        // with the resting striker's disc left out. The list names each disc gone from its spot and, from the track,
+        // the pocket it was heading for (-1: unknown).
+        java.util.Map<Integer,Integer> drop=new java.util.HashMap<>();
+        for(Coin c:before.coins)if(!c.isQueen)drop.merge(c.color,1,Integer::sum);
+        for(int k=0;k<after.coins.size();k++){Coin d=after.coins.get(k);if(k==strikerDisc||d.isQueen)continue;drop.merge(d.color,-1,Integer::sum);}
+        java.util.Set<Integer> ownColours=new java.util.HashSet<>();for(Coin c:before.coins)if(c.targetEligible&&!c.isQueen)ownColours.add(c.color);
+        int own=0,other=0;for(java.util.Map.Entry<Integer,Integer> en:drop.entrySet()){int n=Math.max(0,en.getValue());if(ownColours.contains(en.getKey()))own+=n;else other+=n;}
+        boolean queenBefore=false,queenAfter=false;for(Coin c:before.coins)if(c.isQueen)queenBefore=true;for(Coin d:after.coins)if(d.isQueen)queenAfter=true;
+        boolean queen=queenBefore&&!queenAfter;
+        // colour labels flicker between frames; the per-colour drops can never exceed the real drop in disc count
+        int total=Math.max(0,before.coins.size()-(after.coins.size()-(strikerDisc>=0?1:0))-(queen?1:0));
+        own=Math.min(own,total);other=Math.min(other,total-own);
+        StringBuilder g=new StringBuilder("[");
         for(Coin c:before.coins){
             boolean still=false;for(Coin d:after.coins)if(d.color==c.color&&Math.hypot(d.pos.x-c.pos.x,d.pos.y-c.pos.y)<c.radius){still=true;break;}
             if(still)continue;
-            boolean gone=true;for(Coin d:after.coins)if(d.color==c.color&&Math.hypot(d.pos.x-c.pos.x,d.pos.y-c.pos.y)<w*.6f){/* may have moved */}
-            // follow through the track: chain the nearest same-colour detection within 0.09 board widths
-            double x=c.pos.x,y=c.pos.y;
-            for(double[] f:frames){double bd=w*.09;double nx=Double.NaN,ny=0;
-                for(int k=3;k+2<f.length;k+=3){if((int)f[k+2]!=c.color)continue;double d=Math.hypot(f[k]-x,f[k+1]-y);if(d<bd){bd=d;nx=f[k];ny=f[k+1];}}
-                if(!Double.isNaN(nx)){x=nx;y=ny;}}
-            // still on the board somewhere near its last tracked spot: moved, not potted
-            boolean onBoard=false;for(Coin d:after.coins)if(d.color==c.color&&Math.hypot(d.pos.x-x,d.pos.y-y)<c.radius*1.5f){onBoard=true;break;}
+            double x=c.pos.x,y=c.pos.y,prevT=Double.NaN,vx=Double.NaN,vy=0;
+            for(double[] f:frames){double dt=Double.isNaN(prevT)?0:Math.max(0,f[0]-prevT)/1000;prevT=f[0];
+                double px=x,py=y,bd=w*Math.max(.09,Math.min(.35,2.0*dt));
+                if(!Double.isNaN(vx)){px=x+vx*dt;py=y+vy*dt;bd=w*.09+.5*Math.hypot(vx,vy)*dt;}
+                double nx=Double.NaN,ny=0;
+                for(int k=3;k+2<f.length;k+=3){if((int)f[k+2]!=c.color)continue;double d=Math.hypot(f[k]-px,f[k+1]-py);if(d<bd){bd=d;nx=f[k];ny=f[k+1];}}
+                if(!Double.isNaN(nx)){if(dt>0){vx=(nx-x)/dt;vy=(ny-y)/dt;}x=nx;y=ny;}}
+            boolean onBoard=false;for(int k=0;k<after.coins.size();k++){Coin d=after.coins.get(k);if(k!=strikerDisc&&d.color==c.color&&Math.hypot(d.pos.x-x,d.pos.y-y)<c.radius*1.5f){onBoard=true;break;}}
             if(onBoard)continue;
             int pocket=-1;double pd=w*.12;
             for(int k=0;k<before.pockets.size();k++){android.graphics.PointF p=before.pockets.get(k);double d=Math.hypot(p.x-x,p.y-y);if(d<pd){pd=d;pocket=k;}}
             if(g.length()>1)g.append(',');
             g.append(String.format(Locale.US,"[%.1f,%.1f,%d,%d,%d,%d]",c.pos.x,c.pos.y,c.color,c.targetEligible?1:0,c.isQueen?1:0,pocket));
-            if(c.isQueen)queen=true;else if(c.targetEligible)own++;else other++;
         }
         g.append(']');
+        if("pocketed".equals(striker)&&incident==null)incident="striker-pocketed"; // foul: keep pictures
+        int discsAfter=after.coins.size()-(strikerDisc>=0?1:0);
         b.append(",\"result\":{\"clean\":").append(before==cleanBefore).append(",\"potted\":").append(g)
          .append(",\"own\":").append(own).append(",\"other\":").append(other).append(",\"queen\":").append(queen)
-         .append(",\"discsBefore\":").append(before.coins.size()).append(",\"discsAfter\":").append(after.coins.size()).append('}');
+         .append(",\"tracked\":").append(frames.size()).append(",\"striker\":\"").append(striker).append('"');
+        if(!Float.isNaN(sx))b.append(String.format(Locale.US,",\"strikerRest\":[%.1f,%.1f]",sx,sy));
+        b.append(",\"discsBefore\":").append(before.coins.size()).append(",\"discsAfter\":").append(discsAfter)
+         .append(",\"discsAfterRaw\":").append(after.coins.size()).append('}');
     }
 }

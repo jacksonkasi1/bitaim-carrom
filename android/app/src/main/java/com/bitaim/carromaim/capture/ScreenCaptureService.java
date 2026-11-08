@@ -96,7 +96,7 @@ public class ScreenCaptureService extends Service {
         lastIncidentAt.put(type,now);
         String id="incident-"+new java.text.SimpleDateFormat("yyyyMMdd-HHmmss",java.util.Locale.US).format(new java.util.Date(now))+"-"+type;
         if(frame!=null)saveDebugImage(frame,id+"_now");
-        if(lastAimedFrame!=null&&type.startsWith("followed-line"))saveDebugImage(lastAimedFrame,id+"_aimed");
+        if(lastAimedFrame!=null&&(type.startsWith("followed-line")||type.startsWith("striker-")))saveDebugImage(lastAimedFrame,id+"_aimed");
         try{
             java.io.File dir=MatchFolder.dir(this);if(dir==null)return;
             StringBuilder b=new StringBuilder();
