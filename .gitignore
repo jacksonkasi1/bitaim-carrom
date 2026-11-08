@@ -1,0 +1,31 @@
+# dependencies and build output
+node_modules/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/.cxx/
+*.apk
+*.aab
+*.zip
+# signing material: never commit
+*.keystore
+*.jks
+keystore.properties
+# desktop test harness output / downloads
+tools/cv-test/classes/
+tools/cv-test/out/
+tools/cv-test/lib/
+# no screenshots or recorded pictures in the repo
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.mp4
+data/**/pictures/
+# misc
+.DS_Store
+*.log
+.idea/
+.vscode/
+!data/**/events.log
