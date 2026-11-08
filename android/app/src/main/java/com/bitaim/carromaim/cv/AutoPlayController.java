@@ -15,6 +15,8 @@ public final class AutoPlayController {
          *  re-derives the intended direction from the striker seen during the hold (live 00:44: the striker was
          *  still settling 6 px away from where the direction was computed, a 2.6° miss on a 91% pot). */
         public float aimX=Float.NaN,aimY=Float.NaN;
+        /** PC brain: an action decided on the PC, executed by the phone's gesture service. */
+        public static Action remote(boolean move,float x1,float y1,float x2,float y2,int aimBudgetMs,float aimX,float aimY){Action a=new Action(move,x1,y1,x2,y2,aimBudgetMs);a.aimX=aimX;a.aimY=aimY;return a;}
         Action(boolean move,float x1,float y1,float x2,float y2){this(move,x1,y1,x2,y2,0);}
         Action(boolean move,float x1,float y1,float x2,float y2,int aimBudgetMs){this.move=move;this.x1=x1;this.y1=y1;this.x2=x2;this.y2=y2;this.aimBudgetMs=aimBudgetMs;correctAim=aimBudgetMs>0;}
     }

@@ -143,6 +143,14 @@ public class OverlayModule extends ReactContextBaseJavaModule {
     @ReactMethod public void clearRecordings(Promise promise){
         com.bitaim.carromaim.capture.RecordingData.clear(getReactApplicationContext());promise.resolve(true);
     }
+    /** PC brain over USB (adb reverse tcp:8765): enable/disable and connection state. */
+    @ReactMethod public void setPcLink(boolean enabled){
+        getReactApplicationContext().getSharedPreferences("bitaim_game_mode",android.content.Context.MODE_PRIVATE).edit().putBoolean("pcLink",enabled).apply();
+        com.bitaim.carromaim.capture.PcLink.setEnabled(enabled);
+    }
+    @ReactMethod public void getPcLink(Promise promise){
+        promise.resolve((com.bitaim.carromaim.capture.PcLink.enabled()?"on":"off")+"|"+(com.bitaim.carromaim.capture.PcLink.connected()?"connected":"waiting"));
+    }
     @ReactMethod public void getAllColours(Promise promise){
         promise.resolve(getReactApplicationContext().getSharedPreferences("bitaim_game_mode",0).getBoolean("allColours",false));
     }
