@@ -190,6 +190,8 @@ public class AimOverlayView extends View {
     private volatile boolean remoteMode;
     /** PC brain connected: draw the PC's route (the phone's own detection is paused). */
     public void setRemoteMode(boolean on){if(remoteMode!=on){remoteMode=on;if(!on){remoteStriker=null;remoteLegs=null;remotePocket=null;remoteLabel=null;}postInvalidate();}}
+    /** Keeps the label, removes the lines (they must not cover the game's aim dots during a shot). */
+    public void hideRemoteLines(){remoteStriker=null;remoteLegs=null;remotePocket=null;postInvalidate();}
     public void setRemoteRoute(float[] striker,float[][] legs,float[] pocket,String label){remoteStriker=striker;remoteLegs=legs;remotePocket=pocket;remoteLabel=label;postInvalidate();}
     private void drawRemote(Canvas canvas){
         float[] st=remoteStriker;float[][] legs=remoteLegs;float[] pk=remotePocket;

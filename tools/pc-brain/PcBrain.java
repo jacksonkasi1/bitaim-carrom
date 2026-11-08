@@ -119,6 +119,8 @@ public class PcBrain {
             String note=auto.consumeNote();if(note!=null)event(note);
             if(a!=null){
                 long aid=++actionId;
+                // The route being executed (the ★ route after a slide, else the route from here), so the phone shows what is fired.
+                ShotPlanner.Shot fired=auto.lastShotRoute();if(fired!=null)sendRoute(fired);
                 if(!a.move&&p.route!=null)logger.markAutoShot(Float.NaN,Float.NaN,Float.NaN,"{\"label\":\""+RoutePlanner.label(p.route).replace("\"","'")+"\",\"chance\":"+(Float.isNaN(p.route.chancePercent)?"null":String.valueOf(Math.round(p.route.chancePercent)))+",\"source\":\"pc\"}");
                 send(String.format(Locale.US,"{\"type\":\"action\",\"id\":%d,\"move\":%b,\"x1\":%.1f,\"y1\":%.1f,\"x2\":%.1f,\"y2\":%.1f,\"aimBudget\":%d,\"aimX\":%s,\"aimY\":%s,\"status\":\"%s\"}",
                         aid,a.move,a.x1,a.y1,a.x2,a.y2,a.aimBudgetMs,Float.isNaN(a.aimX)?"null":String.format(Locale.US,"%.1f",a.aimX),Float.isNaN(a.aimY)?"null":String.format(Locale.US,"%.1f",a.aimY),st.replace("\"","'")));

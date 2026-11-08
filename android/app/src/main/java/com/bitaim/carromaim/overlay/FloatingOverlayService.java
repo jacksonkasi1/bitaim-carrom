@@ -462,6 +462,9 @@ public class FloatingOverlayService extends Service {
                 AutoPlayController.Action action=AutoPlayController.Action.remote(a.optBoolean("move"),(float)a.optDouble("x1"),(float)a.optDouble("y1"),
                         (float)a.optDouble("x2"),(float)a.optDouble("y2"),a.optInt("aimBudget"),(float)a.optDouble("aimX",Double.NaN),(float)a.optDouble("aimY",Double.NaN));
                 appendEvent(String.format(java.util.Locale.US,"PC %s from (%.0f,%.0f) to (%.0f,%.0f) %s",action.move?"SLIDE":"SHOT",action.x1,action.y1,action.x2,action.y2,a.optString("status")));
+                // 4.10.5: our drawn route lay exactly on the game's aim dots during the hold, so the PC could not read
+                // them and every PC shot released uncorrected (live 15:10, "dots 0"). Hide the lines while shooting.
+                if(!action.move)mainHandler.post(()->{if(aimOverlayView!=null)aimOverlayView.hideRemoteLines();});
                 mainHandler.post(()->{
                     GameGestureService gestures=GameGestureService.INSTANCE;
                     // Only while the player has auto play armed on the phone.

@@ -90,7 +90,10 @@ public final class ShotLogger {
         lastWasAimed=false;
         if(s==null||s.board==null||s.striker==null)return;
         // 4.9.11: a clean pre-shot board (no aim dots hiding discs), accepted when two consecutive frames agree.
-        if(!waiting&&s.aimGuideDots<3){
+        // 4.10.5: the clean board must come from this turn: another player's turn (no own striker) clears it, else
+        // their pots were credited to our shot ("own 7" in one shot, PC session 15:10:23).
+        if(!waiting&&!s.strikerDetected){cleanBefore=null;cleanCandidate=null;}
+        if(!waiting&&s.aimGuideDots<3&&s.strikerDetected){
             if(cleanCandidate!=null&&sameLayout(cleanCandidate,s)){cleanBefore=cleanCandidate;cleanAt=now;}
             cleanCandidate=copy(s);
         }
