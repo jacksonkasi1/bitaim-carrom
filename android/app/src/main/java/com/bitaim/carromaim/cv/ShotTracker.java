@@ -23,7 +23,7 @@ public final class ShotTracker {
     /** 4.9.1: while auto play is armed, always return the freshest full plan's best route (no hold, no six-pass
      *  challenger rule). The hold keeps the drawn guide steady for a human, but auto play fired the older, weaker
      *  route while a stronger one was only one or two passes away. */
-    private volatile boolean alwaysBest;
+    private volatile boolean alwaysBest;private int missingFrames;
     public void setAlwaysBest(boolean on){alwaysBest=on;}
     public boolean isSteady(){return stillFrames>=3;}
     public String routePosition(){return routeCount>0?" ("+routeNumber+"/"+routeCount+")":"";}
@@ -32,7 +32,10 @@ public final class ShotTracker {
     public Coin selectedTarget(){return manualTarget!=null?resolvedManualTarget:automaticTarget;}
     public boolean isLocked(){return manualTarget!=null;}
     public ShotPlanner.Shot update(GameState state){
-        if(state==null||!state.teamKnown||!state.strikerDetected){clear();return null;}
+        // 4.10.7 (user: lines blink): one frame without the striker (glow, finger, animation) no longer resets the
+        // route; three in a row do.
+        if(state==null||!state.teamKnown||!state.strikerDetected){if(++missingFrames>=3)clear();return null;}
+        missingFrames=0;
         float x=state.striker.pos.x,y=state.striker.pos.y;
         stillFrames=!Float.isNaN(lastX)&&Math.hypot(x-lastX,y-lastY)<state.striker.radius*.12f?Math.min(30,stillFrames+1):0;
         lastX=x;lastY=y;
@@ -62,7 +65,17 @@ public final class ShotTracker {
         routeCount=choices.size();routeNumber=1;
         ShotPlanner.Shot best=choices.isEmpty()?null:choices.get(0);
         ShotPlanner.Shot shown;
-        if(held==null||alwaysBest)shown=choose(best,state);
+        if(held==null)shown=choose(best,state);
+        else if(alwaysBest){
+            // 4.10.7: auto play still takes the planner's best, but near-equal options no longer swap every pass (the
+            // lines blinked between two routes). The current route, freshly validated on this board, stays unless the
+            // best is clearly better (+8 realistic chance) or the current one no longer exists.
+            ShotPlanner.Shot fresh=null;for(ShotPlanner.Shot c:choices)if(same(c,held)){fresh=c;break;}
+            boolean clearlyBetter=fresh==null||best==null||Float.isNaN(RoutePlanner.rankChance(fresh))&&!Float.isNaN(RoutePlanner.rankChance(best))
+                    ||!Float.isNaN(RoutePlanner.rankChance(best))&&!Float.isNaN(RoutePlanner.rankChance(fresh))&&RoutePlanner.rankChance(best)>=RoutePlanner.rankChance(fresh)+8f
+                    ||RoutePlanner.compare(best,fresh)<0&&RoutePlanner.tierOf(best)<RoutePlanner.tierOf(fresh);
+            shown=clearlyBetter?choose(best,state):choose(fresh,state);
+        }
         // Stability: a challenger must beat the held route clearly (25 quality points, about
         // one degree of extra aim tolerance) on six consecutive planner passes.
         else if(best==null||best.quality()<held.quality()+25||same(best,held)){previous=held;challengerFrames=0;shown=held;}

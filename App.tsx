@@ -55,6 +55,9 @@ export default function App() {
   const [autoPlay, setAutoPlay] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [recStats, setRecStats] = useState('');
+  const [pcLink, setPcLink] = useState(false);
+  const [pcState, setPcState] = useState('');
+  const refreshPc = async () => {try {const [on, st] = String(await OverlayModule.getPcLink()).split('|'); setPcLink(on === 'on'); setPcState(st);} catch {}};
   const refreshRecStats = async () => {
     try {
       const [shots, pics, bytes, matches] = String(await OverlayModule.getRecordingStats()).split('|').map(Number);
@@ -94,6 +97,7 @@ export default function App() {
     try {setAutoPlay(await OverlayModule.isAutoPlayEnabled());} catch {}
     try {setDebugMode(await OverlayModule.getDebugMode());} catch {}
     refreshRecStats();
+    refreshPc();
     try {
       const can = await OverlayModule.canDrawOverlays();
       setHasOverlay(can);
@@ -207,7 +211,7 @@ export default function App() {
 
       <View style={styles.header}>
         <Text style={styles.logo}>Bit-Aim</Text>
-        <Text style={styles.subtitle}>Carrom Aim Assist • v4.9.11 • True shot results, slider log, match folders</Text>
+        <Text style={styles.subtitle}>Carrom Aim Assist • v4.10.7 • PC brain over USB (optional), true shot results</Text>
       </View>
 
       <ScrollView style={styles.scroll}
@@ -297,6 +301,16 @@ export default function App() {
             value={autoPlay} color="#FFD700" onToggle={async (enabled: boolean) => {
               try {OverlayModule.setAutoPull(autoPull/100);await OverlayModule.setAutoPlay(enabled);setAutoPlay(enabled);} catch(e: any) {Alert.alert('Gesture control',e.message);}
             }} />
+          <Divider />
+          <ToggleRow title="PC brain (USB)"
+            sub={pcLink
+              ? (pcState === 'connected' ? 'Connected: the PC plans every shot and records every frame. Turn off any time, also mid-game (star menu).' : 'On, waiting for the PC program (USB debugging + pc-brain). The phone plans until it connects.')
+              : 'Off: the phone plans by itself. Turn on to let a connected PC do detection and planning (faster, smarter). Also in the star menu.'}
+            value={pcLink} color="#40C4FF" onToggle={(enabled: boolean) => {
+              setPcLink(enabled);
+              try {OverlayModule.setPcLink(enabled);} catch {}
+              setTimeout(refreshPc, 1500);
+            }} />
           <TouchableOpacity onPress={() => OverlayModule.openGestureSettings()}>
             <Text style={styles.permBannerCta}>Enable BitAim gesture control in Android Settings →</Text>
           </TouchableOpacity>
@@ -354,7 +368,7 @@ export default function App() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Bit-Aim v4.9.11 • Chance ~% is a simulated estimate with hand aim error, power and pocket variation, not measured game odds. Power and spin are not calibrated.
+            Bit-Aim v4.10.7 • Chance ~% is a simulated estimate with hand aim error, power and pocket variation, not measured game odds. Power and spin are not calibrated.
           </Text>
         </View>
       </ScrollView>

@@ -9,7 +9,7 @@ public final class TeamMatcher {
     /** {@code striped}: a white-and-colour striped skin (live game 2026-11-07: opponent blue/white stripes vs our solid
      *  blue). Measured on 3 frames / 23 discs: striped discs have no deep colour in the centre (0%) and 41-62% bright
      *  ring pixels; solid discs have >=38% deep centre (even under a white overlay wedge) and <=25% bright ring. */
-    private static class Profile { int kind; float hue,colourFraction,neutralFraction,brightFraction,coreDeep; boolean striped; }
+    private static class Profile { int kind; float hue,colourFraction,neutralFraction,brightFraction,coreDeep,value; boolean striped; }
     private final Profile own, opponent;
     public final boolean known;
     public final boolean freestyle;
@@ -77,6 +77,19 @@ public final class TeamMatcher {
         if(p.kind==CHROMATIC)return TargetColourLock.chromatic(p.hue,p.striped);
         return TargetColourLock.AUTO;
     }
+    /** Mean brightness of a solid chromatic disc's colour pixels, or -1 (used to tell two shades of one hue apart). */
+    public float appearanceValue(Mat hsv,float x,float y,float r){
+        Profile p=profile(hsv,x,y,r);if(p.kind!=CHROMATIC||p.striped)return -1f;
+        // The disc face (0.2-0.55 r), not the rim: both blues share a bright bevelled rim (ring 226-234) while the faces
+        // differ (light 255, dark 140).
+        float sum=0;int n=0;float r0=r*.2f,r1=r*.55f;
+        for(int py=Math.max(0,(int)(y-r1));py<=Math.min(hsv.rows()-1,(int)(y+r1));py++)
+            for(int px=Math.max(0,(int)(x-r1));px<=Math.min(hsv.cols()-1,(int)(x+r1));px++){
+                float d=(px-x)*(px-x)+(py-y)*(py-y);if(d<r0*r0||d>r1*r1)continue;
+                double[] c=hsv.get(py,px);if(c[1]>=90&&hueDistance((float)c[0],p.hue)<=15){sum+=(float)c[2];n++;}
+            }
+        return n<6?-1f:sum/n;
+    }
     public boolean isYellowCoin(Mat hsv,float x,float y,float r){
         Profile coin=profile(hsv,x,y,r);
         return coin.kind==CHROMATIC&&coin.hue>=25&&coin.hue<=40;
@@ -125,7 +138,7 @@ public final class TeamMatcher {
         return changes;
     }
     private static Profile profile(Mat hsv,float x,float y,float r){
-        Profile result=new Profile();float[] histogram=new float[36];
+        Profile result=new Profile();float[] histogram=new float[36],valueSum=new float[36];int[] valueCount=new int[36];
         int total=0,colour=0,neutral=0,bright=0,dark=0,core=0,deep=0;
         int left=Math.max(0,(int)(x-r)),right=Math.min(hsv.cols()-1,(int)(x+r));
         int top=Math.max(0,(int)(y-r)),bottom=Math.min(hsv.rows()-1,(int)(y+r));
@@ -135,7 +148,7 @@ public final class TeamMatcher {
             if(d<r*r*.20f || d>r*r*.90f)continue;
             total++;double[] c=hsv.get(py,px);float h=(float)c[0],s=(float)c[1],v=(float)c[2];
             if(s>=90 && v>=70 && !(h>=6&&h<25)){
-                histogram[Math.min(35,(int)(h/5))]+=s*v;colour++;
+                int bin=Math.min(35,(int)(h/5));histogram[bin]+=s*v;valueSum[bin]+=v;valueCount[bin]++;colour++;
             }else if(s<90){neutral++;if(v>165)bright++;if(v<70)dark++;}
         }
         if(total==0)return result;
@@ -148,6 +161,7 @@ public final class TeamMatcher {
                 if(sum>weight){weight=sum;peak=i;}
             }
             result.kind=CHROMATIC;result.hue=peak*5+2.5f;
+            {float vs=0;int vc=0;for(int k=-1;k<=1;k++){int b=(peak+k+36)%36;vs+=valueSum[b];vc+=valueCount[b];}result.value=vc==0?0:vs/vc;}
             result.coreDeep=core==0?1f:deep/(float)core;
             // A single white overlay band or wedge across a solid disc also hides its centre: real stripes cross the
             // ring 6-10 times (one band 2-4) and leave <=39% colour (one band 55%).

@@ -40,7 +40,10 @@ public final class MatchFolder {
         java.util.List<File> pics=new java.util.ArrayList<>();
         for(File m:ms){File[] p=new File(m,"pictures").listFiles();if(p!=null)java.util.Collections.addAll(pics,p);}
         if(pics.size()>MAX_PICTURES){
-            pics.sort((x,y)->Long.compare(x.lastModified(),y.lastModified()));
+            // 4.10.9: pictures of mistakes (incident-*: followed the line but missed, striker left the board) are
+            // removed last; the 7 "followed the line and missed" shots of 2026-11-08 had lost their pictures.
+            pics.sort((x,y)->{boolean ix=x.getName().startsWith("incident-"),iy=y.getName().startsWith("incident-");
+                if(ix!=iy)return ix?1:-1;return Long.compare(x.lastModified(),y.lastModified());});
             for(int i=0;i<pics.size()-MAX_PICTURES;i++)pics.get(i).delete();
         }
     }

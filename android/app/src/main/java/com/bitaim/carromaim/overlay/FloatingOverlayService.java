@@ -296,6 +296,7 @@ public class FloatingOverlayService extends Service {
         String label=key==TargetColourLock.AUTO?(settings.getBoolean("allColours",false)?"All":"Auto"):TargetColourLock.label(key);
         if(com.bitaim.carromaim.cv.RoutePlanner.proStyle)label=label+" • Pro";
         if(autoPlay.enabled())label=label+" • AUTO";
+        if(com.bitaim.carromaim.capture.PcLink.enabled())label=label+(com.bitaim.carromaim.capture.PcLink.connected()?" • PC":" • PC…");
         // 4.9.7: "● REC" only while a board is detected and recorded; debug mode on but idle shows nothing.
         if(com.bitaim.carromaim.capture.DebugMode.enabled(this)&&com.bitaim.carromaim.capture.ScreenCaptureService.recordingLive)label=label+" • ● REC";
         if(!android.text.TextUtils.equals(colourLockLabel.getText(),label))colourLockLabel.setText(label);
@@ -352,6 +353,8 @@ public class FloatingOverlayService extends Service {
         menu.add(1,2,keys.size()+1,"All colours / Freestyle").setCheckable(true).setChecked(all);
         menu.add(2,4,keys.size()+2,"Pro style: break + rail shots").setCheckable(true).setChecked(com.bitaim.carromaim.cv.RoutePlanner.proStyle);
         menu.add(2,6,keys.size()+3,"Debug recording (shots, pictures, incidents)").setCheckable(true).setChecked(com.bitaim.carromaim.capture.DebugMode.enabled(this));
+        boolean pcOn=com.bitaim.carromaim.capture.PcLink.enabled();
+        menu.add(2,7,keys.size()+4,pcOn?(com.bitaim.carromaim.capture.PcLink.connected()?"PC brain: ON (connected)":"PC brain: ON (waiting for PC)"):"PC brain (USB): OFF").setCheckable(true).setChecked(pcOn);
         menu.add(0,5,0,autoWasOn?"■ Stop auto play":"▶ Auto play (drags and shoots)");
         menu.add(0,3,keys.size()+2,"Next route").setEnabled(latestState!=null&&latestState.strikerDetected);
         colourMenu.setOnMenuItemClickListener(item->{
@@ -363,6 +366,13 @@ public class FloatingOverlayService extends Service {
                 else if(GameGestureService.INSTANCE==null){
                     android.widget.Toast.makeText(this,"Enable \"BitAim optional move and shoot\" in Android Accessibility first",android.widget.Toast.LENGTH_LONG).show();
                 }else confirmAutoPlay();
+            }
+            else if(id==7){
+                // PC brain on/off at any time, also mid-game: the phone switches back to its own brain instantly.
+                boolean on=!com.bitaim.carromaim.capture.PcLink.enabled();
+                getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).edit().putBoolean("pcLink",on).apply();
+                com.bitaim.carromaim.capture.PcLink.setEnabled(on);updateColourLockLabel();
+                android.widget.Toast.makeText(this,on?"PC brain ON: plans on the PC over USB when the PC program runs (phone brain until then)":"PC brain OFF: the phone plans by itself",android.widget.Toast.LENGTH_SHORT).show();
             }
             else if(id==6){
                 boolean on=!com.bitaim.carromaim.capture.DebugMode.enabled(this);
@@ -431,10 +441,52 @@ public class FloatingOverlayService extends Service {
         onDetectedState(null);
     }
 
+    // ── PC brain link (branch pc-link) ──────────────────────────────────────────────────────────────
+    private final GameGestureService.AimSource pcAimSource=new GameGestureService.AimSource(){
+        @Override public float[] guide(){return com.bitaim.carromaim.capture.PcLink.guide();}
+        @Override public long guideAt(){return com.bitaim.carromaim.capture.PcLink.guideAt();}
+    };
+    private void setupPcLink(){
+        com.bitaim.carromaim.capture.PcLink.setListener(new com.bitaim.carromaim.capture.PcLink.Listener(){
+            @Override public void onStatus(String text){mainHandler.post(()->{updateColourLockLabel();if(aimOverlayView!=null){aimOverlayView.setRemoteMode(com.bitaim.carromaim.capture.PcLink.connected());aimOverlayView.setAutoStatus("PC • "+text);}});}
+            @Override public void onRoute(org.json.JSONObject r){
+                float[] st=arr(r.optJSONArray("striker"));float[] pk=arr(r.optJSONArray("pocket"));
+                org.json.JSONArray lg=r.optJSONArray("legs");float[][] legs=null;
+                if(lg!=null){legs=new float[lg.length()][];for(int i=0;i<lg.length();i++)legs[i]=arr(lg.optJSONArray(i));}
+                final float[][] fl=legs;String label=r.optString("label");
+                mainHandler.post(()->{if(aimOverlayView!=null)aimOverlayView.setRemoteRoute(st,fl,pk,label);});
+            }
+            private float[] arr(org.json.JSONArray a){if(a==null)return null;float[] f=new float[a.length()];for(int i=0;i<f.length;i++)f[i]=(float)a.optDouble(i);return f;}
+            @Override public void onAction(org.json.JSONObject a){
+                final long id=a.optLong("id");
+                AutoPlayController.Action action=AutoPlayController.Action.remote(a.optBoolean("move"),(float)a.optDouble("x1"),(float)a.optDouble("y1"),
+                        (float)a.optDouble("x2"),(float)a.optDouble("y2"),a.optInt("aimBudget"),(float)a.optDouble("aimX",Double.NaN),(float)a.optDouble("aimY",Double.NaN));
+                appendEvent(String.format(java.util.Locale.US,"PC %s from (%.0f,%.0f) to (%.0f,%.0f) %s",action.move?"SLIDE":"SHOT",action.x1,action.y1,action.x2,action.y2,a.optString("status")));
+                // 4.10.5: our drawn route lay exactly on the game's aim dots during the hold, so the PC could not read
+                // them and every PC shot released uncorrected (live 15:10, "dots 0"). Hide the lines while shooting.
+                if(!action.move)mainHandler.post(()->{if(aimOverlayView!=null)aimOverlayView.hideRemoteLines();});
+                mainHandler.post(()->{
+                    GameGestureService gestures=GameGestureService.INSTANCE;
+                    // Only while the player has auto play armed on the phone.
+                    boolean sent=autoPlay.enabled()&&gestures!=null&&gestures.sendCorrected(action,pcAimSource,(success,aim)->{
+                        String aimJson=aim==null?"null":String.format(java.util.Locale.US,"{\"initialDeg\":%s,\"finalDeg\":%s,\"steps\":%d,\"dots\":%d,\"x2\":%.1f,\"y2\":%.1f}",
+                                Float.isNaN(aim.initialDeg)?"null":String.format(java.util.Locale.US,"%.3f",aim.initialDeg),Float.isNaN(aim.finalDeg)?"null":String.format(java.util.Locale.US,"%.3f",aim.finalDeg),aim.steps,aim.dots,aim.x2,aim.y2);
+                        com.bitaim.carromaim.capture.PcLink.sendEvent("{\"type\":\"done\",\"id\":"+id+",\"ok\":"+success+",\"aim\":"+aimJson+"}");
+                        if(aim!=null)appendEvent(String.format(java.util.Locale.US,"PC AIM initial=%.2f° final=%.2f° steps=%d dots=%d",aim.initialDeg,aim.finalDeg,aim.steps,aim.dots));
+                    });
+                    if(!sent)com.bitaim.carromaim.capture.PcLink.sendEvent("{\"type\":\"done\",\"id\":"+id+",\"ok\":false,\"aim\":null}");
+                });
+            }
+        });
+        com.bitaim.carromaim.capture.PcLink.setEnabled(getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).getBoolean("pcLink",false));
+    }
+
     private void setupAimOverlay() {
         aimOverlayView = new AimOverlayView(this);
         AimOverlayView.errorHook=this::reportAppError;
+        setupPcLink();
         aimOverlayView.setPlanListener((state,route,gold,planned)->{
+            if(com.bitaim.carromaim.capture.PcLink.connected())return; // the PC brain decides while linked
             aimOverlayView.setAutoPlayArmed(autoPlay.enabled());
             watchIncidents(state,route);
             autoPlay.setGoldReady(aimOverlayView.goldReady());

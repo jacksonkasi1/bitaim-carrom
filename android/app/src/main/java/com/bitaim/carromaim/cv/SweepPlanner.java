@@ -14,6 +14,8 @@ import java.util.*;
 public final class SweepPlanner {
     private SweepPlanner(){}
     private static final double WALL=.80;
+    /** Time-budget multiplier (phone 1; the PC brain raises it). */
+    public static volatile double BUDGET_SCALE=1;
 
     /** Up to {@code limit} pots, widest aim window first; {@code quick} uses 2-degree steps and one power. */
     public static List<ShotPlanner.Shot> candidates(GameState s,Coin selected,boolean quick,int limit){
@@ -21,7 +23,7 @@ public final class SweepPlanner {
         if(s==null||s.board==null||!s.teamKnown||!s.strikerDetected||s.striker==null||s.coins.isEmpty())return out;
         float w=s.board.width();
         float step=quick?2f:1f;float[] powers=quick?new float[]{1.9f}:new float[]{1.9f,1.5f,2.3f}; // 4.8.6: real pull range under constant friction // normal power first: a slow phone may hit the time budget
-        long deadline=System.nanoTime()+(quick?120_000_000L:(s.openingCluster?250_000_000L:600_000_000L)); // phone-time budget
+        long deadline=System.nanoTime()+(long)((quick?120_000_000L:(s.openingCluster?250_000_000L:600_000_000L))*BUDGET_SCALE); // phone-time budget (PC brain scales it)
         long signature=PhysicsVerifier.signature(s);
         for(float boards:powers){
             // success[a] = index of the own disc potted at angle a (or -1); pocket[a] = its pocket

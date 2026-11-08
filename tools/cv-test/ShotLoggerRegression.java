@@ -59,11 +59,42 @@ public class ShotLoggerRegression {
         check(lines.size()==4&&lines.get(3).contains("\"suggestion\":{\"label\":\"Direct route\"")&&lines.get(3).contains("\"targetFate\":\"not-moved\""),"Manual record compares the shot with the suggestion");
         check("followed-line-not-moved".equals(log.consumeIncident()),"Following the line without potting the target raises an incident");
         check(log.consumeNewManualRecord(),"Manual record is flagged for debug pictures");
+        // 4.10.9: hand-played shot with a motion track. The own black coin goes into the top-left pocket, the white
+        // coin is knocked across the board (moved, not potted) and the striker comes to rest mid-board, where it is
+        // detected as a black disc (live 16:51:58). Then the same shot with the striker gone (pocketed = foul).
+        for(boolean strikerRests:new boolean[]{true,false}){
+            GameState aim=base();aim.strikerDetected=true;aim.aimGuideX=-.6f;aim.aimGuideY=-.8f;aim.aimGuideDots=12;
+            Coin own=new Coin(300,300,20,Coin.COLOR_BLACK,false);own.targetEligible=true;Coin opp=new Coin(700,500,20,Coin.COLOR_WHITE,false);
+            aim.coins.add(own);aim.coins.add(opp);
+            GameState[] motion=new GameState[3];float[][] ownAt={{220,220},{120,120},null},oppAt={{720,440},{750,370},{780,300}};
+            for(int k=0;k<3;k++){motion[k]=base();motion[k].strikerDetected=false;
+                if(ownAt[k]!=null)motion[k].coins.add(new Coin(ownAt[k][0],ownAt[k][1],20,Coin.COLOR_BLACK,false));
+                motion[k].coins.add(new Coin(oppAt[k][0],oppAt[k][1],20,Coin.COLOR_WHITE,false));
+                float[] sp=strikerRests?new float[]{500-60*k,700-60*k}:new float[]{600+150*k,880+30*k};
+                motion[k].coins.add(new Coin(sp[0],sp[1],20,Coin.COLOR_BLACK,false));} // the moving striker, seen as a disc
+            GameState rest=base();rest.strikerDetected=false;rest.coins.add(new Coin(785,290,20,Coin.COLOR_WHITE,false));
+            if(strikerRests)rest.coins.add(new Coin(380,580,20,Coin.COLOR_BLACK,false));
+            long t0=strikerRests?100000:200000;int n=lines.size();log.consumeIncident();
+            log.setSuggestion(-.6f,-.8f,300,300,50,50,"Direct route");
+            for(long t=t0;t<=t0+300;t+=100)log.feed(aim,t);
+            log.feed(motion[0],t0+400);log.feed(motion[1],t0+600);log.feed(motion[2],t0+900);
+            log.feed(rest,t0+1700);log.feed(rest,t0+2000);log.feed(rest,t0+2400);
+            check(lines.size()==n+1,"Hand-played shot gives one record");
+            String r=lines.get(n);r=r.substring(r.indexOf("\"result\":"));
+            check(r.contains("\"own\":1,")&&r.contains("\"other\":0,"),"Own coin potted, knocked white coin counted as moved: "+r);
+            check(r.contains("[300.0,300.0,"+Coin.COLOR_BLACK+",1,0,0]"),"Potted coin traced to the top-left pocket: "+r);
+            if(strikerRests){
+                check(r.contains("\"striker\":\"resting\"")&&r.contains("\"strikerRest\":[380.0,580.0]")&&r.contains("\"discsAfter\":1,")&&r.contains("\"discsAfterRaw\":2"),"Resting striker found and left out of the disc count: "+r);
+            }else{
+                check(r.contains("\"striker\":\"pocketed\"")&&r.contains("\"discsAfter\":1,"),"Striker followed into the bottom-right pocket is reported: "+r);
+                check("striker-pocketed".equals(log.consumeIncident()),"Striker pocketed (foul) raises an incident with pictures");
+            }
+        }
         ShotLogCalibrator.Shot shot=ShotLogCalibrator.parse(lines.get(0));
         check(shot.before.coins.size()==2&&Math.abs(shot.ux-0.3)<1e-3,"Record round-trips board, discs and aim");
         check(shot.realPotted==2-after.coins.size(),"Potted count recorded");
         ShotLogCalibrator.Fit f=ShotLogCalibrator.fit(Collections.singletonList(shot));
         check(Math.abs(f.speeds[0]-truthSpeed)<=.21,"Calibrator recovers launch speed ("+f.speeds[0]+" vs "+truthSpeed+")");
-        System.out.printf(Locale.US,"PASS: one record per shot, no record without release, finger occlusion ignored, downward guide kept, auto debug pictures/route record, followed-line incident, round-trip parse, speed %.1f (truth %.1f), rail %.2f, potted %d%n",f.speeds[0],truthSpeed,f.wall,shot.realPotted);
+        System.out.printf(Locale.US,"PASS: one record per shot, no record without release, finger occlusion ignored, downward guide kept, auto debug pictures/route record, followed-line incident, hand-shot track (potted vs moved, resting striker, striker-pocketed foul), round-trip parse, speed %.1f (truth %.1f), rail %.2f, potted %d%n",f.speeds[0],truthSpeed,f.wall,shot.realPotted);
     }
 }

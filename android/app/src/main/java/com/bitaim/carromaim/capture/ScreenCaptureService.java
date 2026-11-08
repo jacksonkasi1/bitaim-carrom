@@ -59,6 +59,7 @@ public class ScreenCaptureService extends Service {
     private static final long   IDLE_INTERVAL_MS = 330, NO_BOARD_INTERVAL_MS = 500, OUT_OF_GAME_INTERVAL_MS = 1500;
     /** True while debug recording is actually capturing: debug mode on and a board detected in Carrom. */
     public static volatile boolean recordingLive;
+    private static final long PC_FRAME_INTERVAL_MS = 33; private static final int PC_FRAME_WIDTH = 1080; private long pcFrameId; // 4.10.6: full resolution (540 px halved position accuracy; PC aims were 1-2 deg off)
     private volatile boolean lastLocalTurn, lastBoardSeen;
     private static final int    CAPTURE_WIDTH   = 1080;
 
@@ -95,7 +96,7 @@ public class ScreenCaptureService extends Service {
         lastIncidentAt.put(type,now);
         String id="incident-"+new java.text.SimpleDateFormat("yyyyMMdd-HHmmss",java.util.Locale.US).format(new java.util.Date(now))+"-"+type;
         if(frame!=null)saveDebugImage(frame,id+"_now");
-        if(lastAimedFrame!=null&&type.startsWith("followed-line"))saveDebugImage(lastAimedFrame,id+"_aimed");
+        if(lastAimedFrame!=null&&(type.startsWith("followed-line")||type.startsWith("striker-")))saveDebugImage(lastAimedFrame,id+"_aimed");
         try{
             java.io.File dir=MatchFolder.dir(this);if(dir==null)return;
             StringBuilder b=new StringBuilder();
@@ -287,7 +288,9 @@ public class ScreenCaptureService extends Service {
             // detected or recorded; one cheap check every 1.5 s notices when the game comes back.
             boolean inGame = com.bitaim.carromaim.overlay.GameGestureService.gameInFront();
             boolean debugOn = DebugMode.enabled(this);
+            boolean pc = PcLink.connected();
             long interval = !inGame ? OUT_OF_GAME_INTERVAL_MS
+                    : pc ? PC_FRAME_INTERVAL_MS
                     : (shotLogger.tracking() || opponentWatcher.tracking()) && debugOn ? 0
                     : lastLocalTurn ? FRAME_INTERVAL_MS
                     : lastBoardSeen ? (debugOn ? FRAME_INTERVAL_MS : IDLE_INTERVAL_MS) // debug: catch the start of other players' shots
@@ -305,6 +308,23 @@ public class ScreenCaptureService extends Service {
 
             bmp = imageToBitmap(img, w, h);
             if (bmp == null) return;
+            if (pc) {
+                // PC brain: send a small JPEG with the settings the PC needs; detection and planning run on the PC.
+                Bitmap small = bmp.getWidth() <= PC_FRAME_WIDTH ? bmp : Bitmap.createScaledBitmap(bmp, PC_FRAME_WIDTH, Math.max(1, Math.round(bmp.getHeight() * (PC_FRAME_WIDTH / (float) bmp.getWidth()))), true);
+                java.io.ByteArrayOutputStream jpg = new java.io.ByteArrayOutputStream(64 * 1024);
+                small.compress(Bitmap.CompressFormat.JPEG, 85, jpg);
+                int fw = small.getWidth(), fh = small.getHeight();
+                if (small != bmp) small.recycle();
+                android.content.SharedPreferences gm = getSharedPreferences("bitaim_game_mode", Context.MODE_PRIVATE);
+                FloatingOverlayService ov = FloatingOverlayService.INSTANCE;
+                String header = String.format(java.util.Locale.US,
+                        "{\"id\":%d,\"t\":%d,\"w\":%d,\"h\":%d,\"sw\":%d,\"sh\":%d,\"auto\":%b,\"key\":%d,\"allColours\":%b,\"pro\":%b,\"debug\":%b}",
+                        ++pcFrameId, now, fw, fh, screenWidth, screenHeight, ov != null && ov.isAutoPlayEnabled(),
+                        gm.getInt("targetColourKey", com.bitaim.carromaim.cv.TargetColourLock.AUTO), gm.getBoolean("allColours", false),
+                        com.bitaim.carromaim.cv.RoutePlanner.proStyle, debugOn);
+                PcLink.offerFrame(header, jpg.toByteArray());
+                return;
+            }
 
             GameState state=null;
             if(com.bitaim.carromaim.overlay.GameGestureService.gameInFront())synchronized(detector){

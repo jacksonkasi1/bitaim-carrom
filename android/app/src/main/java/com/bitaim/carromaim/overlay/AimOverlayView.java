@@ -184,6 +184,25 @@ public class AimOverlayView extends View {
     private volatile ShotPlanner.Shot firingRoute;
     /** The route auto play is firing (null when none); drawn instead of the current-spot suggestion. */
     public void setFiringRoute(ShotPlanner.Shot r){firingRoute=r;postInvalidate();}
+    // ── PC brain route (drawn without the phone's own detection, which pauses in PC mode) ──
+    private volatile float[] remoteStriker;private volatile float[][] remoteLegs;private volatile float[] remotePocket;private volatile String remoteLabel;
+    private Paint remotePaint;
+    private volatile boolean remoteMode;
+    /** PC brain connected: draw the PC's route (the phone's own detection is paused). */
+    public void setRemoteMode(boolean on){if(remoteMode!=on){remoteMode=on;if(!on){remoteStriker=null;remoteLegs=null;remotePocket=null;remoteLabel=null;}postInvalidate();}}
+    /** Keeps the label, removes the lines (they must not cover the game's aim dots during a shot). */
+    public void hideRemoteLines(){remoteStriker=null;remoteLegs=null;remotePocket=null;postInvalidate();}
+    public void setRemoteRoute(float[] striker,float[][] legs,float[] pocket,String label){remoteStriker=striker;remoteLegs=legs;remotePocket=pocket;remoteLabel=label;postInvalidate();}
+    private void drawRemote(Canvas canvas){
+        float[] st=remoteStriker;float[][] legs=remoteLegs;float[] pk=remotePocket;
+        if(st==null&&legs==null)return;
+        if(remotePaint==null){remotePaint=new Paint(Paint.ANTI_ALIAS_FLAG);remotePaint.setStyle(Paint.Style.STROKE);remotePaint.setStrokeCap(Paint.Cap.ROUND);}
+        remotePaint.setStrokeWidth(3*dp);
+        if(st!=null){remotePaint.setColor(0xE600E5FF);for(int i=0;i+3<st.length;i+=2)canvas.drawLine(st[i],st[i+1],st[i+2],st[i+3],remotePaint);}
+        if(legs!=null){remotePaint.setColor(0xE622FF6E);for(float[] l:legs)if(l!=null&&l.length>=4)canvas.drawLine(l[0],l[1],l[2],l[3],remotePaint);}
+        if(pk!=null){remotePaint.setColor(0xE622FF6E);canvas.drawCircle(pk[0],pk[1],18*dp,remotePaint);}
+        String lb=remoteLabel;if(lb!=null&&!lb.isEmpty())canvas.drawText("PC • "+lb,24*dp,getHeight()-150*dp,textPaint);
+    }
     public void setAutoStatus(String status){if(status!=null&&!status.equals(autoStatus)){autoStatus=status;postInvalidate();}}
     public void setPlayMode(boolean on) { playMode = on; postInvalidate(); }
 
@@ -212,7 +231,8 @@ public class AimOverlayView extends View {
         }
         if (s.striker == null || !s.strikerDetected) {   // not your turn → hide auto lines
             if(++missingStrikerFrames>3)resetPlan();
-            else{cancelPlanning();goldSignature=0;goldX=Float.NaN;goldVisible=false;}
+            // 4.10.7: a single missed striker frame keeps the plan and the ★ (they blinked off and the ★ search restarted).
+            else if(missingStrikerFrames>=2){cancelPlanning();goldSignature=0;goldX=Float.NaN;goldVisible=false;}
             manualStriker = null;
             clearSnap();
             this.detected = s;
@@ -406,6 +426,7 @@ public class AimOverlayView extends View {
         super.onDraw(canvas);
         try {
             if(autoPlayArmed)canvas.drawText("AUTO • "+(autoStatus.isEmpty()?"armed":autoStatus)+" • tap ★ to stop",24*dp,65*dp,textPaint);
+            if(remoteMode){drawRemote(canvas);return;}
             if(autoMode){drawAuto(canvas,detected);return;}
             drawHint(canvas,detected==null?missingBoardHint()
                     :!detected.teamKnown?"Team badges hidden — tap icon to return to play":pickHint);
@@ -524,7 +545,18 @@ public class AimOverlayView extends View {
         return discsSimilar(a,b,.3f);
     }
 
+    // 4.10.7 (user: lines blink): the last frame that had a board and our striker, kept briefly for drawing.
+    private GameState lastGoodState;private long lastGoodMs;
+    private static final long HOLD_LINES_MS=700;
     private void drawAuto(Canvas canvas, GameState s) {
+        long nowMs=android.os.SystemClock.uptimeMillis();
+        boolean good=s!=null&&s.board!=null&&s.striker!=null&&s.strikerDetected;
+        if(good){lastGoodState=s;lastGoodMs=nowMs;}
+        else if(lastGoodState!=null&&nowMs-lastGoodMs<HOLD_LINES_MS&&(s==null||s.board==null||sameDiscs(lastGoodState,s))){
+            // One or two frames without the board or striker (finger, glow, animation): redraw the last good frame's
+            // lines instead of blanking them. Auto play ignores it (same frame id).
+            s=lastGoodState;
+        }
         if (s == null || s.board == null) {
             aimAlignment.update(null,null);
             if(planListener!=null)planListener.onPlan(null,null,Float.NaN,null);
@@ -545,7 +577,7 @@ public class AimOverlayView extends View {
         if (autoState != s) {
             // No plan for this frame yet. Keep the previous lines while the striker is still, and
             // for a short while during a slide (same discs), so the guide never blinks out.
-            boolean recent=plan!=null&&android.os.SystemClock.uptimeMillis()-planAppliedMs<1200&&sameDiscs(plan.state,s);
+            boolean recent=plan!=null&&android.os.SystemClock.uptimeMillis()-planAppliedMs<2000&&sameDiscs(plan.state,s); // 4.10.7: 1.2 s -> 2 s
             provisional=plan!=null&&!stillClose(plan.state,s)&&recent;
             if (plan == null || !stillClose(plan.state, s) && !recent) {
                 aimAlignment.update(null,null);
