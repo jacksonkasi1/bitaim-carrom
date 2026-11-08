@@ -31,3 +31,6 @@ data/**/pictures/
 !data/**/events.log
 # README screenshots (curated, cropped, no player names) are allowed
 !docs/images/*.jpg
+
+# Release APKs for install (repo is private)
+!releases/*.apk
