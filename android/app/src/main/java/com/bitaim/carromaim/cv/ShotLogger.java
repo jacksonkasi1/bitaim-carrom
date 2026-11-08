@@ -284,7 +284,9 @@ public final class ShotLogger {
                     boolean heading=false;
                     if(!Double.isNaN(vx)&&Math.hypot(vx,vy)>w*.3)for(android.graphics.PointF p:before.pockets)
                         if(Math.hypot(p.x-x,p.y-y)<w*.12&&((p.x-x)*vx+(p.y-y)*vy)>0)heading=true;
-                    striker=heading?"pocketed":"gone";
+                    // 4.12.1: at the phone's ~6 fps the follow loses a fast striker; 4 of 5 "gone" shots (23:17-23:33)
+                    // were clean pots with the striker resting on the board. Say so instead of implying a foul.
+                    striker=heading?"pocketed":"lost";
                 }
             }
         }

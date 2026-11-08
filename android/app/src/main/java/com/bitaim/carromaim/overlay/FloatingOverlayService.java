@@ -721,8 +721,12 @@ public class FloatingOverlayService extends Service {
         });
     }
 
+    private final com.bitaim.carromaim.cv.DiscMemory discMemory=new com.bitaim.carromaim.cv.DiscMemory();
     public void onDetectedState(GameState s) {
         strikerBaseline.apply(s);
+        // 4.12.1: discs hidden for a moment by our own lines or the aim dots stay in the plan (live 23:33:51).
+        int restored=discMemory.apply(s,android.os.SystemClock.uptimeMillis());
+        if(restored>0)Log.i("BitAim/Discs","kept "+restored+" hidden disc(s) in the plan");
         com.bitaim.carromaim.cv.DiscSeparation.apply(s);
         if(s!=null&&s.aimGuideDots>0&&!Float.isNaN(s.aimGuideX)){
             float[] d=com.bitaim.carromaim.cv.AimGuideDetector.shotDirection(s.aimGuideX,s.aimGuideY);
