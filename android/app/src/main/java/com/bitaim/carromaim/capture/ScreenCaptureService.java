@@ -296,7 +296,7 @@ public class ScreenCaptureService extends Service {
             long interval = !inGame ? OUT_OF_GAME_INTERVAL_MS
                     : pc ? PC_FRAME_INTERVAL_MS
                     : (shotLogger.tracking() || opponentWatcher.tracking()) && debugOn ? TRACK_INTERVAL_MS
-                    : lastLocalTurn ? FRAME_INTERVAL_MS
+                    : lastLocalTurn ? com.bitaim.carromaim.cv.SpeedProfile.frameIntervalMs() // 4.12.0: user frame rate
                     : lastBoardSeen ? (debugOn ? FRAME_INTERVAL_MS : IDLE_INTERVAL_MS) // debug: catch the start of other players' shots
                     : NO_BOARD_INTERVAL_MS;
             if (now - lastFrameMs < interval) return;

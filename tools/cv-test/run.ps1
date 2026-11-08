@@ -11,7 +11,7 @@ if (!(Test-Path $jar)) {
 }
 $inputs = @($Screenshots | ForEach-Object { (Resolve-Path -LiteralPath $_).Path })
 $sources = @(Get-ChildItem "$here/stubs" -Filter '*.java' -Recurse | ForEach-Object FullName)
-$sources += @('BoardDetector','Coin','GameState','ShotPlanner','TeamMatcher','ShotTracker','RoutePlanner','PhysicsVerifier','AutoPlayController','GoldSceneLock','ClusterPlanner','AimGuideDetector','AimAlignment','TargetColourLock','QueenRule','OpeningPlanner','SweepPlanner','AimCorrection','ShotLogger','StrikerBaseline','OpponentWatcher','DiscSeparation','LuckyShot','LuckyAuto') | ForEach-Object { "$src/$_.java" }
+$sources += @('BoardDetector','Coin','GameState','ShotPlanner','TeamMatcher','ShotTracker','RoutePlanner','PhysicsVerifier','AutoPlayController','GoldSceneLock','ClusterPlanner','AimGuideDetector','AimAlignment','TargetColourLock','QueenRule','OpeningPlanner','SweepPlanner','AimCorrection','ShotLogger','StrikerBaseline','OpponentWatcher','DiscSeparation','LuckyShot','LuckyAuto','SpeedProfile') | ForEach-Object { "$src/$_.java" }
 $sources += "$here/Harness.java"
 $sources += "$here/Regression.java"
 $sources += "$here/PlannerRegression.java"

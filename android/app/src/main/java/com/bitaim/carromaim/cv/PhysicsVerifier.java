@@ -43,6 +43,9 @@ public final class PhysicsVerifier {
             route.robustnessTrials=STRESS.length;route.robustnessPassed=potPasses;route.productiveStressPassed=productivePasses;
         }
     }
+    /** 4.12.0 speed level (SpeedProfile): try every power (true) or stop at the first valid one; how many powers get
+     *  the 9-trial stress test (2, or 1 on the faster levels). */
+    public static volatile boolean SPEED_BEAM=true;public static volatile int STRESS_CANDIDATES=2;
     public static boolean validate(GameState state,ShotPlanner.Shot route){
         if(route.kind==5||route.sweep)return route.modelValidated&&route.worldSignature==signature(state); // OpeningPlanner and SweepPlanner validate their own shots
         route.modelValidated=false;
@@ -51,7 +54,7 @@ public final class PhysicsVerifier {
         long signature=signature(state);
         // 4.9.8 (user: "hit the easy coin hard so the striker breaks the cluster"): every power is tried, not only in
         // close-pair scenes. Logged geometric "Pot + open cluster" shots potted 7/9 against ~65% for plain pots.
-        boolean speedBeam=true;int pathsNow=OpeningPlanner.pathsNow(state);
+        boolean speedBeam=SPEED_BEAM;int pathsNow=OpeningPlanner.pathsNow(state);
         List<SpeedCandidate> candidates=new ArrayList<>();
         // Complex scene: three nominal solves, then at most two nine-trial sets.
         // Isolated scenes retain the first-valid-speed fast path (at most 12 solves).
@@ -81,7 +84,7 @@ public final class PhysicsVerifier {
         SpeedCandidate best=null;
         // The softest valid power always stays in the stress test, so a fragile hard pot never beats a safe soft one.
         if(candidates.size()>2){SpeedCandidate soft=candidates.get(0);for(SpeedCandidate c:candidates)if(c.speed<soft.speed)soft=c;candidates.remove(soft);candidates.add(1,soft);}
-        for(int i=0;i<Math.min(2,candidates.size());i++){
+        for(int i=0;i<Math.min(Math.max(1,STRESS_CANDIDATES),candidates.size());i++){
             SpeedCandidate candidate=candidates.get(i);
             for(double[] sample:STRESS){
                 if(Thread.currentThread().isInterrupted())return false;

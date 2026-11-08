@@ -201,6 +201,9 @@ public class FloatingOverlayService extends Service {
         super.onCreate();
         INSTANCE = this;
         com.bitaim.carromaim.cv.RoutePlanner.proStyle=getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).getBoolean("proStyle",false);
+        // 4.12.0: speed level and frame rate chosen by the player (defaults: Fast, 10 fps).
+        com.bitaim.carromaim.cv.SpeedProfile.setLevel(getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).getInt("speedLevel",com.bitaim.carromaim.cv.SpeedProfile.DEFAULT_LEVEL));
+        com.bitaim.carromaim.cv.SpeedProfile.setFps(getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).getInt("speedFps",com.bitaim.carromaim.cv.SpeedProfile.DEFAULT_FPS));
         createNotificationChannel();
         try {
             // Android 14+ (targetSdk 34) requires the service type here as well as
@@ -356,6 +359,8 @@ public class FloatingOverlayService extends Service {
         boolean pcOn=com.bitaim.carromaim.capture.PcLink.enabled();
         menu.add(2,7,keys.size()+4,pcOn?(com.bitaim.carromaim.capture.PcLink.connected()?"PC brain: ON (connected)":"PC brain: ON (waiting for PC)"):"PC brain (USB): OFF").setCheckable(true).setChecked(pcOn);
         menu.add(0,5,0,autoWasOn?"■ Stop auto play":"▶ Auto play (drags and shoots)");
+        menu.add(2,8,keys.size()+5,"⚡ Speed: "+com.bitaim.carromaim.cv.SpeedProfile.SHORT[com.bitaim.carromaim.cv.SpeedProfile.level()]+" ▸");
+        menu.add(2,9,keys.size()+6,"Frame rate: "+com.bitaim.carromaim.cv.SpeedProfile.fps()+" fps ▸");
         menu.add(0,3,keys.size()+2,"Next route").setEnabled(latestState!=null&&latestState.strikerDetected);
         colourMenu.setOnMenuItemClickListener(item->{
             int id=item.getItemId();
@@ -374,6 +379,8 @@ public class FloatingOverlayService extends Service {
                 com.bitaim.carromaim.capture.PcLink.setEnabled(on);updateColourLockLabel();
                 android.widget.Toast.makeText(this,on?"PC brain ON: plans on the PC over USB when the PC program runs (phone brain until then)":"PC brain OFF: the phone plans by itself",android.widget.Toast.LENGTH_SHORT).show();
             }
+            else if(id==8)showSpeedMenu();
+            else if(id==9)showFpsMenu();
             else if(id==6){
                 boolean on=!com.bitaim.carromaim.capture.DebugMode.enabled(this);
                 com.bitaim.carromaim.capture.DebugMode.set(this,on);updateColourLockLabel();
@@ -401,6 +408,42 @@ public class FloatingOverlayService extends Service {
             Log.w("BitAim/Overlay","Could not open colour menu",e);
             android.widget.Toast.makeText(this,"Colour chooser unavailable — reopen the overlay",android.widget.Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /** 4.12.0: speed level chooser (planning depth vs speed). */
+    private void showSpeedMenu(){
+        if(floatingBtnView==null)return;
+        PopupMenu m=new PopupMenu(new ContextThemeWrapper(this,android.R.style.Theme_Material_Light),floatingBtnView);
+        int cur=com.bitaim.carromaim.cv.SpeedProfile.level();
+        for(int i=0;i<com.bitaim.carromaim.cv.SpeedProfile.NAMES.length;i++)m.getMenu().add(1,i,i,com.bitaim.carromaim.cv.SpeedProfile.NAMES[i]).setCheckable(true).setChecked(i==cur);
+        m.getMenu().setGroupCheckable(1,true,true);
+        m.setOnMenuItemClickListener(item->{
+            int l=item.getItemId();
+            com.bitaim.carromaim.cv.SpeedProfile.setLevel(l);
+            getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).edit().putInt("speedLevel",l).apply();
+            onDetectedState(null); // re-plan with the new level
+            String[] what={"Deep: full search every time (slowest)","Fast: quick line first, full Pro search after (default)","Ultra: quick search only, lighter ★ search","Max: fastest, least searching (fewer odd routes)"};
+            android.widget.Toast.makeText(this,"⚡ "+what[l],android.widget.Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        try{m.show();}catch(android.view.WindowManager.BadTokenException e){Log.w("BitAim/Overlay","Could not open speed menu",e);}
+    }
+    /** 4.12.0: frame rate on the player's turn. */
+    private void showFpsMenu(){
+        if(floatingBtnView==null)return;
+        PopupMenu m=new PopupMenu(new ContextThemeWrapper(this,android.R.style.Theme_Material_Light),floatingBtnView);
+        int cur=com.bitaim.carromaim.cv.SpeedProfile.fps();
+        int[] fps=com.bitaim.carromaim.cv.SpeedProfile.FPS;
+        for(int i=0;i<fps.length;i++)m.getMenu().add(1,fps[i],i,fps[i]+" fps"+(fps[i]==com.bitaim.carromaim.cv.SpeedProfile.DEFAULT_FPS?" (default)":fps[i]>=20?" (more CPU)":"")).setCheckable(true).setChecked(fps[i]==cur);
+        m.getMenu().setGroupCheckable(1,true,true);
+        m.setOnMenuItemClickListener(item->{
+            int f=item.getItemId();
+            com.bitaim.carromaim.cv.SpeedProfile.setFps(f);
+            getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).edit().putInt("speedFps",f).apply();
+            android.widget.Toast.makeText(this,"Frame rate "+f+" fps on your turn",android.widget.Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        try{m.show();}catch(android.view.WindowManager.BadTokenException e){Log.w("BitAim/Overlay","Could not open frame rate menu",e);}
     }
 
     /** Second step before auto play starts: an explicit Yes / No next to the star. */

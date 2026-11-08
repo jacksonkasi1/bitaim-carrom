@@ -555,7 +555,10 @@ public class AimOverlayView extends View {
             }
             // 4.11.2: Pro style is two passes: a quick plan shown at once, then the full plan (openers, full sweep,
             // more chance estimates) if no newer board arrived meanwhile. Safe style is one (already quick) pass.
-            boolean twoPass=RoutePlanner.proStyle;
+            // 4.12.0: the speed level decides: quick pass only (Ultra, Max), quick then full in Pro style (Fast), or
+            // the full pass every time (Deep).
+            if(com.bitaim.carromaim.cv.SpeedProfile.quickOnly()){if(!same)plan(s,true);else{PlanResult r=new PlanResult();r.state=s;r.shot=last.shot;r.selected=last.selected;r.position=last.position;r.alternatives=last.alternatives;r.quick=true;final PlanResult d=r;post(()->{if(!plannerStopped)applyPlan(d);});}continue;}
+            boolean twoPass=RoutePlanner.proStyle&&com.bitaim.carromaim.cv.SpeedProfile.twoPass();
             if(!(same&&last.quick)){
                 plan(s,twoPass);
                 if(!twoPass||pendingPlan.get()!=null||Thread.currentThread().isInterrupted())continue;
@@ -563,9 +566,11 @@ public class AimOverlayView extends View {
             plan(s,false);
         }
     }
+    /** Duration of the last planner pass (shown next to the speed level). */
+    private volatile long lastPlanMs=-1;
     private void plan(GameState s,boolean quick){
         PlanResult result=new PlanResult();result.state=s;result.quick=quick;
-        RoutePlanner.QUICK.set(quick);
+        RoutePlanner.QUICK.set(quick);long planT0=android.os.SystemClock.uptimeMillis();
         try{
             synchronized(shotTracker){
                 result.shot=shotTracker.update(s);
@@ -577,6 +582,7 @@ public class AimOverlayView extends View {
             Coin goldTarget=result.selected;
             if(goldTarget==null&&result.shot!=null)goldTarget=result.shot.coin;
             int signature=goldSceneLock.update(s,goldTarget);
+            lastPlanMs=android.os.SystemClock.uptimeMillis()-planT0;
             lastPlanned=result;
             final PlanResult done=result;final int sig=signature;final Coin target=goldTarget;final GameState frame=s;
             post(() -> {
@@ -662,6 +668,8 @@ public class AimOverlayView extends View {
         if(planListener!=null)planListener.onPlan(s,autoShot,autoGold,plan==null?s:plan.state);
         // Auto play: draw the route it will actually fire (user 00:30: "it shows one line but hits another"). That is
         // the shot being fired during the hold, else the ★ route once the striker stands on the ★.
+        // 4.12.0: speed level, frame rate and the last planning time, so speed settings can be compared live.
+        canvas.drawText("⚡ "+com.bitaim.carromaim.cv.SpeedProfile.SHORT[com.bitaim.carromaim.cv.SpeedProfile.level()]+" • "+com.bitaim.carromaim.cv.SpeedProfile.fps()+" fps"+(lastPlanMs>=0?" • plan "+lastPlanMs+" ms":""),24*dp,getHeight()-168*dp,smallTextPaint);
         ShotPlanner.Shot shown=autoShot;
         if(autoPlayArmed){
             ShotPlanner.Shot fire=firingRoute!=null?firingRoute:goldRoute;

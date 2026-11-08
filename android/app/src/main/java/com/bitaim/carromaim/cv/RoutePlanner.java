@@ -44,6 +44,8 @@ public final class RoutePlanner {
     /** 4.11.2: quick pass for the phone (user, live 2026-11-08 22:xx: "suggestion not showing", Pro style on): no
      *  opening search while a reasonable pot exists, short sweep, fewer chance estimates. The overlay shows this at once
      *  and runs the full pass after it while the board and striker stay the same. */
+    /** 4.12.0 speed level: candidates validated per route type, cluster-break candidates on/off, chance estimates. */
+    public static volatile int PER_KIND=8,CHANCE_ROUTES=6;public static volatile boolean CLUSTER_ROUTES=true;
     public static final ThreadLocal<Boolean> QUICK=new ThreadLocal<Boolean>(){@Override protected Boolean initialValue(){return false;}};
     public static List<ShotPlanner.Shot> routes(GameState s,Coin selected){
         boolean quick=QUICK.get();
@@ -51,11 +53,11 @@ public final class RoutePlanner {
         int[] tried=new int[8],kept=new int[8];
         for(ShotPlanner.Shot route:pool){
             int kind=complexity(route);
-            if(tried[kind]>=8)continue;
+            if(tried[kind]>=PER_KIND)continue;
             tried[kind]++;
             if(PhysicsVerifier.validate(s,route)){applyObjectiveScore(route);out.add(route);}
         }
-        for(ShotPlanner.Shot route:ClusterPlanner.candidates(s,selected)){
+        if(CLUSTER_ROUTES)for(ShotPlanner.Shot route:ClusterPlanner.candidates(s,selected)){
             if(tried[6]++>=6||kept[6]>=2)break;
             if(PhysicsVerifier.validate(s,route)){out.add(route);kept[6]++;}
         }
@@ -73,7 +75,7 @@ public final class RoutePlanner {
         // Realistic chance for the leading pots (24 seeded samples each), then rank again with it.
         int estimated=0;
         for(ShotPlanner.Shot route:out){
-            if(estimated>=(quick?3:6)||Thread.currentThread().isInterrupted())break;
+            if(estimated>=(quick?Math.min(3,CHANCE_ROUTES):CHANCE_ROUTES)||Thread.currentThread().isInterrupted())break;
             if(route.kind>=4)continue;
             route.chancePercent=PhysicsVerifier.chance(s,route,CHANCE_SAMPLES);markTouching(s,route);estimated++;
         }
