@@ -129,7 +129,8 @@ public final class AutoPlayController {
             float off=Math.abs(s.striker.pos.x-pendingX);
             // 4.9.11: slider calibration data (start, target, finger travel, where it really stopped).
             if(!Float.isNaN(lastSlide[0])&&!(off>s.striker.radius&&now-lastAction<MOVE_VERIFY_MS))note=String.format(java.util.Locale.US,"SLIDE_LANDED start=%.1f target=%.1f finger=%.1f landed=%.1f off=%.1f",lastSlide[0],pendingX,lastFingerDx,s.striker.pos.x,s.striker.pos.x-pendingX);
-            if(off>s.striker.radius*.25f&&(off>s.striker.radius||slides<MAX_SLIDES&&turn<HURRY_MS)){
+            // 4.10.4: the slider cannot move less than ~15 px precisely (logged slides); no correction under 12 px.
+            if(off>Math.max(12f,s.striker.radius*.25f)&&(off>s.striker.radius||slides<MAX_SLIDES&&turn<HURRY_MS)){
                 if(off>s.striker.radius&&now-lastAction<MOVE_VERIFY_MS){status="moving striker";return null;}
                 if(slides<MAX_SLIDES&&turn<HURRY_MS){
                     // Corrective slide for the remainder: the ★ is often the only spot that works on a busy board.
@@ -279,11 +280,18 @@ public final class AutoPlayController {
         float controlY=Float.isNaN(s.sliderY)?s.board.bottom+w*.40f:s.sliderY;
         float[] reach=RoutePlanner.reachable(s);
         targetX=Math.max(reach[0],Math.min(reach[1],targetX));
-        float fingerX=Math.max(s.board.left+w*.02f,Math.min(s.board.right-w*.02f,sx+(targetX-sx)/SLIDER_GAIN));
+        float fingerX=Math.max(s.board.left+w*.02f,Math.min(s.board.right-w*.02f,sx+fingerFor(targetX-sx)));
         lastFingerDx=fingerX-sx;
         moved=busy=true;slides++;lastAction=now;lastWasMove=true;pendingX=targetX;stable=0;status=text;
         lastSlide=new float[]{sx,targetX,controlY};
         return new Action(true,sx,controlY,fingerX,controlY);
+    }
+    /** 4.10.4: finger travel for a wanted striker move, from 16 logged slides (4.9.11 SLIDE_LANDED): small drags jump
+     *  about 15 px further than the finger (18 px finger -> 32 px), large drags move about 0.82 x the finger. */
+    static float fingerFor(float want){
+        float a=Math.abs(want),sign=Math.signum(want);
+        if(a<=55f)return sign*Math.max(4f,a-15f);
+        return want/.82f;
     }
     private long turnNow=-1;
     private boolean hurried(){return turnStart>=0&&turnNow-turnStart>=HURRY_MS;}

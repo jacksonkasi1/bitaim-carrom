@@ -21,8 +21,9 @@ public class PcBrain {
     public static void main(String[] args)throws Exception{
         nu.pattern.OpenCV.loadLocally();
         // Deeper search than the phone can afford (same code, larger limits).
-        RoutePlanner.CHANCE_SAMPLES=200;RoutePlanner.GOLD_STEPS=40;RoutePlanner.GOLD_SWEEP_EVERY=1;RoutePlanner.GOLD_VALIDATE=24;
-        SweepPlanner.BUDGET_SCALE=3;
+        // 4.10.4: 200/40/1/24/3 took 2.1 s per plan on a real board and the turn ran out; this keeps a plan well under 1 s.
+        RoutePlanner.CHANCE_SAMPLES=96;RoutePlanner.GOLD_STEPS=30;RoutePlanner.GOLD_SWEEP_EVERY=2;RoutePlanner.GOLD_VALIDATE=16;
+        SweepPlanner.BUDGET_SCALE=1.5;
         File root=new File(args.length>0?args[0]:"recordings");
         try(ServerSocket server=new ServerSocket(PORT,1,InetAddress.getByName("127.0.0.1"))){
             log("PC brain listening on 127.0.0.1:"+PORT+" (adb reverse tcp:"+PORT+" tcp:"+PORT+")");
@@ -47,7 +48,7 @@ public class PcBrain {
         volatile Plan plan=new Plan();long planSignature=0;
         final ShotLogger logger;final PrintWriter events;
         long actionId=0;String lastStatus="";boolean armed=false;long lastFpsAt=System.currentTimeMillis();int fpsCount=0;
-        double detectMs=0,planMs=0;
+        double detectMs=0,planMs=0,quickMs=0;
         Session(Socket s,File dir)throws IOException{
             socket=s;this.dir=dir;new File(dir,"frames").mkdirs();
             in=new DataInputStream(new BufferedInputStream(s.getInputStream(),1<<16));
@@ -125,7 +126,7 @@ public class PcBrain {
                 log((a.move?"slide ":"SHOT ")+st);
             }
             fpsCount++;
-            if(now-lastFpsAt>=5000){log(String.format(Locale.US,"%.1f fps, detect %.0f ms, plan %.0f ms, %s",fpsCount*1000.0/(now-lastFpsAt),detectMs,planMs,st));fpsCount=0;lastFpsAt=now;}
+            if(now-lastFpsAt>=5000){log(String.format(Locale.US,"%.1f fps, detect %.0f ms, route %.0f ms, full plan %.0f ms, %s",fpsCount*1000.0/(now-lastFpsAt),detectMs,quickMs,planMs,st));fpsCount=0;lastFpsAt=now;}
         }
         GameState prev;Plan sentPlan;
         /** The chosen route as points for the phone overlay (striker path, coin legs, pocket, label with chance). */
@@ -168,9 +169,12 @@ public class PcBrain {
                 Plan np=new Plan();np.planned=snap;np.signature=sig;
                 List<ShotPlanner.Shot> routes=RoutePlanner.routes(snap,null);
                 np.route=routes.isEmpty()?null:routes.get(0);
+                // Two stages: the route from here is usable at once; the ★ search follows (goldReady=false meanwhile).
+                plan=np;quickMs=quickMs*.7+(System.nanoTime()-t0)/1e6*.3;
+                Plan full=new Plan();full.planned=snap;full.signature=sig;full.route=np.route;
                 ShotPlanner.Shot[] best=new ShotPlanner.Shot[1];float[] score=new float[1];
-                np.goldX=RoutePlanner.goldX(snap,null,score,best);np.goldRoute=best[0];np.goldReady=true;
-                plan=np;planMs=planMs*.7+(System.nanoTime()-t0)/1e6*.3;
+                full.goldX=RoutePlanner.goldX(snap,null,score,best);full.goldRoute=best[0];full.goldReady=true;
+                if(plan==np)plan=full;planMs=planMs*.7+(System.nanoTime()-t0)/1e6*.3;
             });
         }
         static void scale(GameState s,float sx,float sy){

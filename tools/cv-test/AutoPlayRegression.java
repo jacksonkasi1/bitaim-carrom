@@ -17,12 +17,12 @@ public class AutoPlayRegression {
   {AutoPlayController low=new AutoPlayController();low.setEnabled(true);check(settle(low,s,r,Float.NaN,5000)==null,"A route tighter than 0.5 degrees blocks auto shots");check(low.status().contains("tight"),"Status names the tight route");}
   r.aimMarginDegrees=1f;
   {AutoPlayController wait=new AutoPlayController();wait.setEnabled(true);wait.setGoldReady(false);check(settle(wait,s,r,700,5500)==null&&wait.status().contains("★"),"Auto play waits for the ★ search before acting");
-   wait.setGoldReady(true);s.frameId++;AutoPlayController.Action mv=settle(wait,s,r,700,7000);float fx=Math.min(s.board.right-s.board.width()*.02f,s.striker.pos.x+(700-s.striker.pos.x)/.88f);
-   check(mv!=null&&mv.move&&Math.abs(mv.x2-fx)<.5f,"Then it slides to the ★ first, finger scaled for the 0.88 slider gain");
+   wait.setGoldReady(true);s.frameId++;AutoPlayController.Action mv=settle(wait,s,r,700,7000);float want=700-s.striker.pos.x,fd=Math.abs(want)<=55f?Math.signum(want)*Math.max(4f,Math.abs(want)-15f):want/.82f;float fx=Math.min(s.board.right-s.board.width()*.02f,s.striker.pos.x+fd);
+   check(mv!=null&&mv.move&&Math.abs(mv.x2-fx)<.5f,"Then it slides to the ★ first, finger from the measured two-regime slider model (4.10.4)");
    // The striker lands short (75% of the way): one corrective slide covers the rest, then no more.
    float start=s.striker.pos.x;wait.complete(true);s.striker.pos.x=start+(700-start)*.75f;
    AutoPlayController.Action fix=null;for(int i=0;i<4&&fix==null;i++){s.frameId++;fix=wait.update(s,r,700,7000+1600+i*100);}
-   check(fix!=null&&fix.move&&fix.x2>700&&wait.status().contains("correcting"),"A short slide gets one corrective slide ("+wait.status()+")");
+   check(fix!=null&&fix.move&&fix.x2>s.striker.pos.x&&wait.status().contains("correcting"),"A short slide gets one corrective slide toward the star ("+wait.status()+")");
    wait.complete(true);AutoPlayController.Action again=null;for(int i=0;i<4&&again==null;i++){s.frameId++;again=wait.update(s,r,700,7000+3300+i*100);}
    check(again==null||!again.move,"At most two slides per turn");s.striker.pos.x=start;}
   {// Turn clock: a sensitive route is refused early but played once the turn is running out.

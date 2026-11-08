@@ -14,8 +14,8 @@ android {
         applicationId "com.bitaim.carromaim"
         minSdkVersion 23          // Android 6.0 Marshmallow
         targetSdkVersion 34       // Android 14
-        versionCode 69
-        versionName "4.10.3"
+        versionCode 70
+        versionName "4.10.4"
         multiDexEnabled true
 
         ndk {
