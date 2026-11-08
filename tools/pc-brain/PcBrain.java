@@ -59,7 +59,9 @@ public class PcBrain {
         void run()throws IOException{
             try{
                 while(true){
-                    int len=in.readInt();int type=in.readUnsignedByte();byte[] payload=new byte[len-1];in.readFully(payload);
+                    int len=in.readInt();
+                    if(len<2||len>8_000_000)throw new IOException("bad message length "+len+" (not a BitAim phone?)");
+                    int type=in.readUnsignedByte();byte[] payload=new byte[len-1];in.readFully(payload);
                     if(type=='F')onFrame(payload);else if(type=='E')onEvent(new String(payload,StandardCharsets.UTF_8));
                 }
             }finally{planner.shutdownNow();events.close();}
@@ -77,6 +79,10 @@ public class PcBrain {
             String header=new String(payload,0,nl,StandardCharsets.UTF_8);
             byte[] jpeg=Arrays.copyOfRange(payload,nl+1,payload.length);
             long now=System.currentTimeMillis();
+            long seq=(long)num(header,"seq",0);
+            try{onFrameBody(header,jpeg,now);}finally{if(seq>0)send("{\"type\":\"ack\",\"seq\":"+seq+"}");}
+        }
+        void onFrameBody(String header,byte[] jpeg,long now){
             long id=(long)num(header,"id",0);float w=(float)num(header,"w",540),h=(float)num(header,"h",1186),sw=(float)num(header,"sw",1080),sh=(float)num(header,"sh",2372);
             boolean wantAuto="true".equals(str(header,"auto")),debug="true".equals(str(header,"debug"));
             detector.setAllColours("true".equals(str(header,"allColours")));

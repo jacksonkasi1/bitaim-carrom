@@ -21,6 +21,10 @@ public final class PcLink {
     private static volatile boolean enabled,connected;
     private static volatile Listener listener;
     private static volatile float[] guide;private static volatile long guideAt;
+    /** 4.10.2 flow control: one frame in flight; the PC acks each processed frame (live: frames queued in the ADB
+     *  buffers and every reply, even "slide done", arrived 9 s late). */
+    private static volatile long sentId,ackedId,sentAt;private static long frameSeq;
+    private static final long ACK_TIMEOUT_MS=600;
     private static final Object lock=new Object();
     private static byte[] pendingFrame;private static String pendingHeader;private static final java.util.ArrayDeque<String> events=new java.util.ArrayDeque<>();
     private static Thread worker;
@@ -45,13 +49,16 @@ public final class PcLink {
                 s.setTcpNoDelay(true);
                 DataOutputStream out=new DataOutputStream(new BufferedOutputStream(s.getOutputStream(),1<<16));
                 Thread reader=new Thread(()->read(s),"BitAim-PcLink-read");reader.setDaemon(true);reader.start();
+                sentId=ackedId=0;frameSeq=0;
                 connected=true;{Listener l=listener;if(l!=null)l.onStatus("connected to PC");}
                 while(enabled&&!s.isClosed()&&reader.isAlive()){
                     byte[] frame=null;String header=null;String event=null;
                     synchronized(lock){
-                        if(pendingFrame==null&&events.isEmpty())lock.wait(500);
+                        boolean canSend=sentId<=ackedId||android.os.SystemClock.uptimeMillis()-sentAt>ACK_TIMEOUT_MS;
+                        if(events.isEmpty()&&(pendingFrame==null||!canSend))lock.wait(canSend?500:20);
+                        canSend=sentId<=ackedId||android.os.SystemClock.uptimeMillis()-sentAt>ACK_TIMEOUT_MS;
                         if(!events.isEmpty())event=events.poll();
-                        else if(pendingFrame!=null){frame=pendingFrame;header=pendingHeader;pendingFrame=null;}
+                        else if(pendingFrame!=null&&canSend){frame=pendingFrame;header=pendingHeader;pendingFrame=null;sentId=++frameSeq;sentAt=android.os.SystemClock.uptimeMillis();header="{\"seq\":"+sentId+","+header.substring(1);}
                     }
                     if(event!=null){byte[] e=event.getBytes("UTF-8");out.writeInt(e.length+1);out.writeByte('E');out.write(e);out.flush();}
                     else if(frame!=null){byte[] h=(header+"\n").getBytes("UTF-8");out.writeInt(h.length+frame.length+1);out.writeByte('F');out.write(h);out.write(frame);out.flush();}
@@ -67,6 +74,7 @@ public final class PcLink {
             String line;
             while((line=in.readLine())!=null){
                 JSONObject o=new JSONObject(line);String type=o.optString("type");
+                if("ack".equals(type)){ackedId=Math.max(ackedId,o.optLong("seq"));synchronized(lock){lock.notifyAll();}continue;}
                 if("guide".equals(type)){
                     guide=new float[]{(float)o.optDouble("ux"),(float)o.optDouble("uy"),(float)o.optDouble("dots"),(float)o.optDouble("sx",Double.NaN),(float)o.optDouble("sy",Double.NaN)};
                     guideAt=android.os.SystemClock.uptimeMillis();

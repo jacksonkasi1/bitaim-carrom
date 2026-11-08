@@ -3,6 +3,8 @@
     package="com.bitaim.carromaim">
 
     <!-- Drawing over other apps (the aim overlay) -->
+    <!-- 4.10.1: PC brain socket to 127.0.0.1:8765 (adb reverse); without it every connect failed silently. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <!-- Foreground services: overlay + screen capture -->
