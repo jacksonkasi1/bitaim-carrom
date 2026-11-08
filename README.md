@@ -16,6 +16,17 @@ Current version: **4.10.7** (branch `pc-link`). Stable release: **v4.9.11** (bra
 | ![Route with pocket line and chance label](docs/images/route-and-chance.jpg) | ![Auto mode at the opening](docs/images/auto-mode-opening.jpg) |
 | Pots a coin and also opens the cluster for the next turn. The text shows the shot type, the model's chance and how much aim error it tolerates. | With auto play armed, the best shot shows on your turn; at the opening it waits for a clear shot. |
 
+### Multiple suggestions and complex positions
+
+![Numbered route options 2 and 3, before and after the shot](docs/images/numbered-options-before-after.jpg)
+
+Before (left) and after (right) one shot. The main route is drawn bright: the striker hits the white coin, which runs up the green dashed line to the top-right pocket. The faint numbered lines **2** and **3** are the next-best options, including one off the right wall. Hold the star for *Next route* to switch between them.
+
+| Open paths (crowded board) |
+|---|
+| ![Open-paths positional shot at the opening](docs/images/open-paths.jpg) |
+| When no coin can be potted safely, BitAim suggests a positional shot. The orange line shows where the first coin should travel to open the cluster, the faint **2** marks another option, and the text reads `0 → 3 pocket paths`: after the shot, three coins have a clear path to a pocket. Use medium power, then pot on the next turn. |
+
 ## How to read the overlay
 
 - **Blue line**: where the striker travels. **Dashed circle**: where it meets the coin.
