@@ -28,6 +28,8 @@ if($LASTEXITCODE -ne 0){throw 'Live colour regression failed'}
 if($LASTEXITCODE -ne 0){throw 'OrangeSkinRegression failed'}
 & "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp TwoBluesRegression "$root/test-results/live-two-blues-20261108.png"
 if($LASTEXITCODE -ne 0){throw 'TwoBluesRegression failed'}
+& "$jdk/bin/java.exe" -cp $cp BackwardFoulRegression "$PSScriptRoot/fixtures/backward-direct-foul-165158.jsonl"
+if($LASTEXITCODE -ne 0){throw 'BackwardFoulRegression failed'}
 & "$jdk/bin/java.exe" -cp $cp ShotLoggerRegression
 if($LASTEXITCODE -ne 0){throw 'Shot logger regression failed'}
 & "$jdk/bin/java.exe" -cp $cp AutoPlayRegression

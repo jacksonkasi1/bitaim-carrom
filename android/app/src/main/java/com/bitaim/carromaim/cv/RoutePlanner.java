@@ -391,6 +391,11 @@ public final class RoutePlanner {
         // Avoid recommending a striker scratch on the approach to the first coin.
         for(int i=0;i<striker.size()-1;i++)for(PointF hole:s.pockets)
             if(segmentDistance(hole,striker.get(i),striker.get(i+1))<s.board.width()*.045f)return null;
+        // 4.10.8 (live 16:51:58): a direct shot backwards at a coin behind the striker line, into a bottom pocket,
+        // showed a green 91% route and fouled. Today's logs had 9 such shots; 7 lost the coin without the disc count
+        // dropping (coin returned = foul), while backward coin-cushion shots scored. The model cannot see why, so
+        // these routes are not offered: no striker cushion, no coin cushion, contact behind the baseline.
+        if(wall<0&&targetBounce==null&&pocket.y>s.striker.pos.y&&ghost.y>s.striker.pos.y+sr*.25f)return null;
         float length=0;for(int i=0;i<striker.size()-1;i++)length+=distance(striker.get(i),striker.get(i+1));
         for(int i=0;i<n;i++)length+=distance(chain.get(i).pos,ends[i]);
         if(targetBounce!=null)length+=distance(targetBounce,pocket);
