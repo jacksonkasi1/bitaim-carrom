@@ -47,7 +47,7 @@ public final class PcLink {
             try(Socket s=new Socket()){
                 s.connect(new InetSocketAddress("127.0.0.1",PORT),800);
                 s.setTcpNoDelay(true);
-                DataOutputStream out=new DataOutputStream(new BufferedOutputStream(s.getOutputStream(),1<<16));
+                DataOutputStream out=new DataOutputStream(new BufferedOutputStream(s.getOutputStream(),1<<19));
                 Thread reader=new Thread(()->read(s),"BitAim-PcLink-read");reader.setDaemon(true);reader.start();
                 sentId=ackedId=0;frameSeq=0;
                 connected=true;{Listener l=listener;if(l!=null)l.onStatus("connected to PC");}

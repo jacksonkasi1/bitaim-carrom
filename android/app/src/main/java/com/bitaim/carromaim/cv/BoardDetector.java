@@ -251,7 +251,7 @@ public class BoardDetector {
         st.assignedColours = assignedTeams!=null;
         st.playerHue = teams.playerHue(); st.opponentHue = teams.opponentHue();
 
-        java.util.List<Coin> plainRed=new java.util.ArrayList<>();
+        java.util.List<Coin> plainRed=new java.util.ArrayList<>();java.util.Map<Coin,Float> shadeValue=new java.util.HashMap<>();
         for (float[] c : unique) {
             Coin coin = new Coin(c[0] / scale, c[1] / scale, sbw * COIN_R_FRAC, (int) c[3], false);
             // Hue is circular: averaging red pixels around 0/180 can look blue.
@@ -263,11 +263,13 @@ public class BoardDetector {
             if(coin.color!=Coin.COLOR_RED){if(coin.appearanceKey==TargetColourLock.DARK)coin.color=Coin.COLOR_BLACK;else if(coin.appearanceKey==TargetColourLock.LIGHT)coin.color=Coin.COLOR_WHITE;}
             // Overlay strokes and painted circles must not become phantom blockers.
             if(targetColourKey==TargetColourLock.AUTO&&!effectiveAllColours&&teams.distinctChromaticTeams() && owner==0 && coin.color!=Coin.COLOR_RED)continue;
-            coin.targetEligible = targetColourKey==TargetColourLock.AUTO?owner==1:!coin.isQueen&&TargetColourLock.matches(targetColourKey,coin.appearanceKey);
+            coin.targetEligible = owner==1; // colour-lock eligibility is set after the shade split below
             coin.transferEligible = owner!=0||coin.appearanceKey!=TargetColourLock.AUTO;
-            st.coins.add(coin);
+            st.coins.add(coin);shadeValue.put(coin,teams.appearanceValue(hsv,c[0],c[1],bw*COIN_R_FRAC));
             if(plain)plainRed.add(coin);
         }
+        splitShades(st.coins,shadeValue);
+        if(targetColourKey!=TargetColourLock.AUTO)for(Coin coin:st.coins)coin.targetEligible=!coin.isQueen&&TargetColourLock.matches(targetColourKey,coin.appearanceKey);
         // Live 2026-11-08 00:29 (purple theme): the opponent's coins are red-and-yellow and their score badge matched
         // the solid red queen, so the queen counted as an opponent coin and "queen before the last coin" never applied.
         // Exactly one plain solid-red disc among other team discs is the queen whatever the badge says.
@@ -458,5 +460,26 @@ public class BoardDetector {
     private static float dist(float x1, float y1, float x2, float y2) {
         float dx = x2 - x1, dy = y2 - y1;
         return (float) Math.sqrt(dx * dx + dy * dy);
+    }
+
+    /** 4.10.6 (live 15:3x: light blue vs dark blue discs, hue 96 vs 110, ring brightness 255 vs 140-195; the Blue lock
+     *  took both). Within one hue family on this board, a clear brightness gap (>= 45) splits the discs into two
+     *  shades and the brighter shade gets the "light" key. A board with one shade per hue is unchanged. */
+    static void splitShades(java.util.List<Coin> coins,java.util.Map<Coin,Float> value){
+        java.util.List<Coin> solid=new java.util.ArrayList<>();
+        for(Coin c:coins){Float v=value.get(c);if(v!=null&&v>=0&&c.appearanceKey>=100&&c.appearanceKey<280&&c.color!=Coin.COLOR_RED)solid.add(c);}
+        java.util.Set<Coin> done=new java.util.HashSet<>();
+        for(Coin seed:solid){
+            if(done.contains(seed))continue;
+            java.util.List<Coin> group=new java.util.ArrayList<>();
+            for(Coin c:solid){int d=Math.abs(c.appearanceKey-seed.appearanceKey);if(Math.min(d,180-d)<=10&&!done.contains(c))group.add(c);}
+            done.addAll(group);if(group.size()<2)continue;
+            group.sort((x,y)->Float.compare(value.get(x),value.get(y)));
+            if(System.getProperty("bitaim.shades")!=null)for(Coin c:group)System.out.printf("shade key %d value %.0f at (%.0f,%.0f)%n",c.appearanceKey,value.get(c),c.pos.x,c.pos.y);
+            float bestGap=0;int split=-1;
+            for(int i=0;i+1<group.size();i++){float g=value.get(group.get(i+1))-value.get(group.get(i));if(g>bestGap){bestGap=g;split=i;}}
+            if(bestGap<45f)continue;
+            for(int i=split+1;i<group.size();i++){Coin c=group.get(i);c.appearanceKey=TargetColourLock.BRIGHT+(c.appearanceKey-100);}
+        }
     }
 }

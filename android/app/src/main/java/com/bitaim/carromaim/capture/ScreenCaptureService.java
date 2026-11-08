@@ -59,7 +59,7 @@ public class ScreenCaptureService extends Service {
     private static final long   IDLE_INTERVAL_MS = 330, NO_BOARD_INTERVAL_MS = 500, OUT_OF_GAME_INTERVAL_MS = 1500;
     /** True while debug recording is actually capturing: debug mode on and a board detected in Carrom. */
     public static volatile boolean recordingLive;
-    private static final long PC_FRAME_INTERVAL_MS = 33; private static final int PC_FRAME_WIDTH = 540; private long pcFrameId;
+    private static final long PC_FRAME_INTERVAL_MS = 33; private static final int PC_FRAME_WIDTH = 1080; private long pcFrameId; // 4.10.6: full resolution (540 px halved position accuracy; PC aims were 1-2 deg off)
     private volatile boolean lastLocalTurn, lastBoardSeen;
     private static final int    CAPTURE_WIDTH   = 1080;
 
@@ -310,9 +310,9 @@ public class ScreenCaptureService extends Service {
             if (bmp == null) return;
             if (pc) {
                 // PC brain: send a small JPEG with the settings the PC needs; detection and planning run on the PC.
-                Bitmap small = Bitmap.createScaledBitmap(bmp, PC_FRAME_WIDTH, Math.max(1, Math.round(bmp.getHeight() * (PC_FRAME_WIDTH / (float) bmp.getWidth()))), true);
+                Bitmap small = bmp.getWidth() <= PC_FRAME_WIDTH ? bmp : Bitmap.createScaledBitmap(bmp, PC_FRAME_WIDTH, Math.max(1, Math.round(bmp.getHeight() * (PC_FRAME_WIDTH / (float) bmp.getWidth()))), true);
                 java.io.ByteArrayOutputStream jpg = new java.io.ByteArrayOutputStream(64 * 1024);
-                small.compress(Bitmap.CompressFormat.JPEG, 80, jpg);
+                small.compress(Bitmap.CompressFormat.JPEG, 85, jpg);
                 int fw = small.getWidth(), fh = small.getHeight();
                 if (small != bmp) small.recycle();
                 android.content.SharedPreferences gm = getSharedPreferences("bitaim_game_mode", Context.MODE_PRIVATE);
