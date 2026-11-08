@@ -41,7 +41,12 @@ public final class RoutePlanner {
         }
         return new float[]{min,Math.max(min,max)};
     }
+    /** 4.11.2: quick pass for the phone (user, live 2026-11-08 22:xx: "suggestion not showing", Pro style on): no
+     *  opening search while a reasonable pot exists, short sweep, fewer chance estimates. The overlay shows this at once
+     *  and runs the full pass after it while the board and striker stay the same. */
+    public static final ThreadLocal<Boolean> QUICK=new ThreadLocal<Boolean>(){@Override protected Boolean initialValue(){return false;}};
     public static List<ShotPlanner.Shot> routes(GameState s,Coin selected){
+        boolean quick=QUICK.get();
         List<ShotPlanner.Shot> pool=candidates(s,selected),out=new ArrayList<>();
         int[] tried=new int[8],kept=new int[8];
         for(ShotPlanner.Shot route:pool){
@@ -60,15 +65,15 @@ public final class RoutePlanner {
         // No reasonable geometric pot: brute-force aim sweep over the whole arc before any chain-reaction gamble
         // (manual-play review 2026-11-07: the user potted through an opponent disc where no candidate existed).
         if(!forgiving&&!Thread.currentThread().isInterrupted()){
-            for(ShotPlanner.Shot sw:SweepPlanner.candidates(s,selected,false,3)){applyObjectiveScore(sw);out.add(sw);if(tier(sw)<=1)forgiving=true;}
+            for(ShotPlanner.Shot sw:SweepPlanner.candidates(s,selected,quick,3)){applyObjectiveScore(sw);out.add(sw);if(tier(sw)<=1)forgiving=true;}
         }
         // (openers are still searched in Pro style or when no reasonable pot exists from here)
-        if((proStyle||!forgiving)&&!Thread.currentThread().isInterrupted())out.addAll(OpeningPlanner.candidates(s,selected,false));
+        if(((proStyle&&!quick)||!forgiving)&&!Thread.currentThread().isInterrupted())out.addAll(OpeningPlanner.candidates(s,selected,quick));
         Collections.sort(out,RoutePlanner::compare);
         // Realistic chance for the leading pots (24 seeded samples each), then rank again with it.
         int estimated=0;
         for(ShotPlanner.Shot route:out){
-            if(estimated>=6||Thread.currentThread().isInterrupted())break;
+            if(estimated>=(quick?3:6)||Thread.currentThread().isInterrupted())break;
             if(route.kind>=4)continue;
             route.chancePercent=PhysicsVerifier.chance(s,route,CHANCE_SAMPLES);markTouching(s,route);estimated++;
         }

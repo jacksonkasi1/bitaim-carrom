@@ -24,7 +24,10 @@ public final class ShotLogger {
      *  and rail loss needs positions over time; start and settled pictures cannot separate power from drag. */
     public static final long TRACK_MS=4000;private StringBuilder track;private int trackFrames;private long trackAt=-1;
     /** True while an auto shot is being tracked: the capture service then detects every frame it can. */
-    public synchronized boolean tracking(){return track!=null&&trackAt>=0&&trackFrames<160;}
+    /** 4.11.2: only inside the TRACK_MS window (an unreleased auto marker kept "tracking" and so full-rate detection
+     *  on). */
+    private long lastFeedAt=-1;
+    public synchronized boolean tracking(){return track!=null&&trackAt>=0&&trackFrames<160&&(lastFeedAt<0||lastFeedAt-trackAt<=TRACK_MS);}
     private float targetX=Float.NaN,targetY,pocketX,pocketY;
     /** Current on-screen suggestion (launch direction, target, pocket, label), refreshed by the overlay. */
     private volatile float[] suggestion;private volatile String suggestionLabel;
@@ -76,6 +79,7 @@ public final class ShotLogger {
         autoPull=pull;autoUx=ux;autoUy=uy;autoInfo=info;autoShotAt=-1;motionIndex=0;
     }
     public synchronized void feed(GameState s,long now){
+        lastFeedAt=now;
         if(shotId!=null&&autoShotAt<0){autoShotAt=now;track=new StringBuilder("[");trackFrames=0;trackAt=now;}
         // 4.10.9: hand-played shots are tracked too (from the release), so the result can follow moved coins and
         // tell a potted coin from one knocked across the board, and find the resting striker.

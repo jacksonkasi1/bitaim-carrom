@@ -499,6 +499,8 @@ public class AimOverlayView extends View {
     /** Immutable result of one planner pass, applied on the UI thread. */
     private static final class PlanResult {
         GameState state; ShotPlanner.Shot shot; Coin selected; String position=""; String label;
+        /** 4.11.2: quick first pass (Pro style); the full pass follows on the same board. */
+        boolean quick;
         List<ShotPlanner.Shot> alternatives=new java.util.ArrayList<>();
     }
     private GameState autoState;
@@ -541,39 +543,53 @@ public class AimOverlayView extends View {
     private void planLoop(){
         GameState s;
         while((s=pendingPlan.getAndSet(null))!=null&&!plannerStopped&&!Thread.currentThread().isInterrupted()){
-            PlanResult result=new PlanResult();result.state=s;
             PlanResult last=lastPlanned;
-            if(last!=null&&sameScene(last.state,s)){
+            boolean same=last!=null&&sameScene(last.state,s);
+            if(same&&!last.quick){
                 // Unchanged board and striker: re-planning would only burn CPU and battery.
+                PlanResult result=new PlanResult();result.state=s;
                 result.shot=last.shot;result.selected=last.selected;result.position=last.position;result.alternatives=last.alternatives;
                 final PlanResult done=result;
                 post(() -> {if(!plannerStopped)applyPlan(done);});
                 continue;
             }
-            try{
-                synchronized(shotTracker){
-                    result.shot=shotTracker.update(s);
-                    result.selected=shotTracker.selectedTarget();
-                    result.position=shotTracker.routePosition();
-                    result.alternatives=shotTracker.alternatives();
-                }
-                Coin goldTarget=result.selected;
-                if(goldTarget==null&&result.shot!=null)goldTarget=result.shot.coin;
-                int signature=goldSceneLock.update(s,goldTarget);
-                lastPlanned=result;
-                final PlanResult done=result;final int sig=signature;final Coin target=goldTarget;final GameState frame=s;
-                post(() -> {
-                    if(plannerStopped)return;
-                    applyPlan(done);
-                    if(sig!=goldSignature){goldSignature=sig;requestGold(frame,target,sig);}
-                });
-            }catch(Throwable t){
-                android.util.Log.w("BitAim/Plan","Planner failed: "+t);
-                ErrorHook hook=errorHook;if(hook!=null)hook.report("planner",t);
-                final PlanResult done=result;done.shot=null;
-                post(() -> {if(!plannerStopped)applyPlan(done);});
+            // 4.11.2: Pro style is two passes: a quick plan shown at once, then the full plan (openers, full sweep,
+            // more chance estimates) if no newer board arrived meanwhile. Safe style is one (already quick) pass.
+            boolean twoPass=RoutePlanner.proStyle;
+            if(!(same&&last.quick)){
+                plan(s,twoPass);
+                if(!twoPass||pendingPlan.get()!=null||Thread.currentThread().isInterrupted())continue;
             }
+            plan(s,false);
         }
+    }
+    private void plan(GameState s,boolean quick){
+        PlanResult result=new PlanResult();result.state=s;result.quick=quick;
+        RoutePlanner.QUICK.set(quick);
+        try{
+            synchronized(shotTracker){
+                result.shot=shotTracker.update(s);
+                result.selected=shotTracker.selectedTarget();
+                result.position=shotTracker.routePosition();
+                result.alternatives=shotTracker.alternatives();
+            }
+            if(Thread.currentThread().isInterrupted())return;
+            Coin goldTarget=result.selected;
+            if(goldTarget==null&&result.shot!=null)goldTarget=result.shot.coin;
+            int signature=goldSceneLock.update(s,goldTarget);
+            lastPlanned=result;
+            final PlanResult done=result;final int sig=signature;final Coin target=goldTarget;final GameState frame=s;
+            post(() -> {
+                if(plannerStopped)return;
+                applyPlan(done);
+                if(sig!=goldSignature){goldSignature=sig;requestGold(frame,target,sig);}
+            });
+        }catch(Throwable t){
+            android.util.Log.w("BitAim/Plan","Planner failed: "+t);
+            ErrorHook hook=errorHook;if(hook!=null)hook.report("planner",t);
+            final PlanResult done=result;done.shot=null;
+            post(() -> {if(!plannerStopped)applyPlan(done);});
+        }finally{RoutePlanner.QUICK.set(false);}
     }
     /** UI thread: show a plan only if it belongs to the frame currently displayed. */
     private void applyPlan(PlanResult result){

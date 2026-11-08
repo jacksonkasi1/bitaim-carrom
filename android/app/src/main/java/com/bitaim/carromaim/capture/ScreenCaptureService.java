@@ -70,6 +70,8 @@ public class ScreenCaptureService extends Service {
     private Handler         workerHandler;
     private final BoardDetector detector = new BoardDetector();
     private boolean loggedCovered, coveredFrame;
+    /** 4.11.2: motion tracks at most 20 fps (was every frame, up to 60 fps, while the phone was already overloaded). */
+    private static final long TRACK_INTERVAL_MS = 50;
     private final com.bitaim.carromaim.cv.LuckyShot.Planner luckyPlanner = new com.bitaim.carromaim.cv.LuckyShot.Planner();
     /** Local-only calibration log: one JSON line per real shot in this app's own files folder. */
     private final com.bitaim.carromaim.cv.ShotLogger shotLogger = new com.bitaim.carromaim.cv.ShotLogger(this::appendShotLine);
@@ -293,7 +295,7 @@ public class ScreenCaptureService extends Service {
             boolean pc = PcLink.connected();
             long interval = !inGame ? OUT_OF_GAME_INTERVAL_MS
                     : pc ? PC_FRAME_INTERVAL_MS
-                    : (shotLogger.tracking() || opponentWatcher.tracking()) && debugOn ? 0
+                    : (shotLogger.tracking() || opponentWatcher.tracking()) && debugOn ? TRACK_INTERVAL_MS
                     : lastLocalTurn ? FRAME_INTERVAL_MS
                     : lastBoardSeen ? (debugOn ? FRAME_INTERVAL_MS : IDLE_INTERVAL_MS) // debug: catch the start of other players' shots
                     : NO_BOARD_INTERVAL_MS;

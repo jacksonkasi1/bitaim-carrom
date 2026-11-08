@@ -19,6 +19,11 @@ public class BackwardFoulRegression {
         }
         if(bad>0){System.out.println("FAIL: "+bad+" backward direct route(s) behind the striker line offered");System.exit(1);}
         if(routes.isEmpty()){System.out.println("FAIL: no route at all on a board with 9 own coins");System.exit(1);}
-        System.out.println("PASS: no backward direct route behind the striker line; best is "+RoutePlanner.label(routes.get(0))+" ("+routes.size()+" routes)");
+        // 4.11.2: the quick first pass (Pro style) on the same board still offers a route, and faster.
+        boolean pro=RoutePlanner.proStyle;RoutePlanner.proStyle=true;
+        RoutePlanner.QUICK.set(true);long t0=System.nanoTime();List<ShotPlanner.Shot> quick=RoutePlanner.routes(g,null);long qms=(System.nanoTime()-t0)/1_000_000;RoutePlanner.QUICK.set(false);
+        t0=System.nanoTime();RoutePlanner.routes(g,null);long fms=(System.nanoTime()-t0)/1_000_000;RoutePlanner.proStyle=pro;
+        if(quick.isEmpty()){System.out.println("FAIL: quick pass found no route");System.exit(1);}
+        System.out.println("PASS: no backward direct route behind the striker line; best is "+RoutePlanner.label(routes.get(0))+" ("+routes.size()+" routes); quick Pro pass "+qms+" ms vs full "+fms+" ms");
     }
 }
