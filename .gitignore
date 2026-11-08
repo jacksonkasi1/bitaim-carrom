@@ -29,3 +29,5 @@ data/**/pictures/
 .idea/
 .vscode/
 !data/**/events.log
+# README screenshots (curated, cropped, no player names) are allowed
+!docs/images/*.jpg
