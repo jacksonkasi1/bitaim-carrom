@@ -105,16 +105,20 @@ Recordings and compiled classes are git-ignored (never pushed).
 
 ---
 
-## 6. Current status and limits (4.10.0)
+## 6. Current status and limits (4.10.3)
 
-Done and tested on the PC (loopback with real game pictures): about 1 s from first frame to a shot decision,
-planning about 250 ms, about 20 frames per second through detection.
+Done:
+- Real-phone link works (4.10.1 added the missing INTERNET permission).
+- Flow control (4.10.2): one frame in flight, the PC acks each frame, so delay stays about one frame
+  instead of growing (the first real test queued frames and replies arrived 9-20 s late).
+- Frame-to-frame steadying on the PC, same as the phone overlay (4.10.3).
+- Deeper search on the PC (4.10.3): 200 noisy trials per chance, 41 striker spots with the aim sweep on each,
+  24 validated candidates; about 0.8 s per plan in the loopback test.
+- The phone draws the PC's chosen route (striker path, coin legs, pocket, label with chance) while connected.
 
 Not yet done:
-1. First real-phone test.
-2. In PC mode the phone shows status text only, not the aim lines.
-3. The phone's frame-to-frame smoothing of board/disc positions and its route-hold logic are not yet ported to the PC.
-4. The planner is the same as on the phone (only faster); deeper search (thousands of noisy trials per shot,
-   two-shot look-ahead) is planned.
-5. Measuring each shot's real launch direction from the recorded frames is planned.
-6. Works only while this PC runs the program and the phone is connected; phones without a PC use their own brain.
+1. Real-phone test of 4.10.3 (built, not installed yet).
+2. Two-shot look-ahead and measuring each shot's real launch direction from the recorded frames.
+3. Works only while this PC runs the program and the phone is connected; phones without a PC use their own brain.
+
+After installing a new phone version, restart the PC program too, so both sides speak the same protocol.
