@@ -4,12 +4,12 @@ Android aim guidance for carrom, built with React Native, Java and OpenCV. BitAi
 
 Current version: **4.10.7** (branch `pc-link`). Stable release: **v4.9.11** (branch `main`, APK under *Releases*).
 
-## Screenshots (practice mode)
+## Screenshots
 
-| Route and chance | Best striker spot (★) | Auto mode |
+| Route and chance | Direct route | Auto mode |
 |---|---|---|
-| ![Route with pocket line and chance label](docs/images/route-and-chance.jpg) | ![Yellow star shows where to slide the striker](docs/images/striker-star-spot.jpg) | ![Auto mode at the opening](docs/images/auto-mode-opening.jpg) |
-| Blue line: striker path. Green dashed line: coin to pocket. The text shows the shot type, the model's chance and how much aim error it tolerates. | The yellow ring and ★ mark a better striker spot. Slide the striker there for a verified route. | With auto play armed, the best shot shows on your turn; at the opening it waits for a clear shot. |
+| ![Route with pocket line and chance label](docs/images/route-and-chance.jpg) | ![Direct route from the striker on the baseline](docs/images/direct-route.jpg) | ![Auto mode at the opening](docs/images/auto-mode-opening.jpg) |
+| Blue line: striker path. Green dashed line: coin to pocket. The text shows the shot type, the model's chance and how much aim error it tolerates. | Striker on the baseline, blue line to the coin, green line to the top-left pocket: direct route, chance about 75%, OK with ±1° aim error. | With auto play armed, the best shot shows on your turn; at the opening it waits for a clear shot. |
 
 ## How to read the overlay
 
