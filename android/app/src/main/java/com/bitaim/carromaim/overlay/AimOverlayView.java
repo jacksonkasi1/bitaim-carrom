@@ -427,6 +427,7 @@ public class AimOverlayView extends View {
         try {
             if(autoPlayArmed)canvas.drawText("AUTO • "+(autoStatus.isEmpty()?"armed":autoStatus)+" • tap ★ to stop",24*dp,65*dp,textPaint);
             if(remoteMode){drawRemote(canvas);return;}
+            if(detected==null&&luckyScene!=null){drawLucky(canvas);return;}
             if(autoMode){drawAuto(canvas,detected);return;}
             drawHint(canvas,detected==null?missingBoardHint()
                     :!detected.teamKnown?"Team badges hidden — tap icon to return to play":pickHint);
@@ -435,6 +436,52 @@ public class AimOverlayView extends View {
             android.util.Log.w("BitAim/Overlay", "Draw failed: " + t);
             ErrorHook hook=errorHook;if(hook!=null)hook.report("draw",t);
         }
+    }
+
+    // ── Lucky Shot (4.11.0) ──────────────────────────────────────────────────
+    private com.bitaim.carromaim.cv.LuckyShot.Scene luckyScene;
+    private com.bitaim.carromaim.cv.LuckyShot.Plan luckyPlan;
+    private boolean luckyPlanning,luckyFiring;
+    public void setLuckyFiring(boolean firing){luckyFiring=firing;postInvalidate();}
+    private Paint luckyPullPaint,luckySpotPaint;
+    public void setLuckyShot(com.bitaim.carromaim.cv.LuckyShot.Scene scene,com.bitaim.carromaim.cv.LuckyShot.Plan plan,boolean planning){
+        if(scene==null&&luckyScene==null)return;
+        luckyScene=scene;luckyPlan=plan;luckyPlanning=planning;
+        postInvalidate();
+    }
+    private void drawLucky(Canvas canvas){
+        com.bitaim.carromaim.cv.LuckyShot.Scene sc=luckyScene;com.bitaim.carromaim.cv.LuckyShot.Plan p=luckyPlan;
+        if(luckyPullPaint==null){
+            luckyPullPaint=fill(Color.parseColor("#22FF6E"));luckyPullPaint.setShadowLayer(6*dp,0,0,Color.BLACK);
+            luckySpotPaint=stroke(Color.parseColor("#FFD700"),3f);
+        }
+        canvas.drawCircle(sc.target.x,sc.target.y,6*dp,targetCrossPaint);
+        float y=getHeight()-150*dp;
+        if(p==null){
+            canvas.drawText(luckyPlanning?"LUCKY SHOT • finding the best shot…":"LUCKY SHOT • no clear shot found",24*dp,y,textPaint);
+            return;
+        }
+        if(luckyFiring){canvas.drawText("LUCKY SHOT • shooting: "+p.kind+" • power "+Math.round(p.powerPercent)+"%",24*dp,y,textPaint);return;}
+        float sx=p.strikerX,sy=p.baseY,r=sc.strikerR;
+        // Better spot (only when the striker can be moved and it is clearly more forgiving).
+        if(p.better!=null){
+            canvas.drawCircle(p.better.strikerX,p.better.baseY,r,luckySpotPaint);
+            canvas.drawText("★ easier from here",p.better.strikerX-40*dp,p.better.baseY+r+16*dp,smallTextPaint);
+        }
+        // Striker spot, striker path to the puck, puck path to its modelled resting point.
+        canvas.drawCircle(sx,sy,r,strikerRingPaint);
+        drawPolyline(canvas,p.strikerPath,aimLinePaint);
+        drawPolyline(canvas,p.puckPath,coinPathPaint);
+        canvas.drawCircle(p.rest.x,p.rest.y,sc.puckR,goldPaint);
+        // Pull point: drag back from the striker to here (opposite the aim) for the planned power.
+        float px=sx-p.ux*p.pullPx,py=sy-p.uy*p.pullPx;
+        canvas.drawLine(sx,sy,px,py,dragHintPaint);
+        canvas.drawCircle(px,py,7*dp,luckyPullPaint);
+        canvas.drawText(autoPlayArmed?"LUCKY SHOT • auto play will shoot this":"LUCKY SHOT • aim on the blue line • pull to the green dot",24*dp,y,textPaint);
+        canvas.drawText(p.kind+" • power "+Math.round(p.powerPercent)+"% • model: "+p.zone,24*dp,y+20*dp,smallTextPaint);
+    }
+    private static void drawPolyline(Canvas canvas,List<PointF> pts,Paint paint){
+        for(int i=0;i+1<pts.size();i++)canvas.drawLine(pts.get(i).x,pts.get(i).y,pts.get(i+1).x,pts.get(i+1).y,paint);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -63,6 +63,10 @@ public class BoardDetector {
     public void setMaxRadiusFrac(float v) { /* radii now derived from board size */ }
     public synchronized void setParam2(double v) { param2 = Math.max(12, Math.min(v, 40)); }
 
+    private LuckyShot.Scene lucky;
+    /** Lucky Shot scene found by the last {@link #detectMat} call (source pixels), or null. */
+    public synchronized LuckyShot.Scene lucky() { return lucky; }
+
     private final Mat frame = new Mat(), small = new Mat(), gray = new Mat(),
                       bgr = new Mat(), hsv = new Mat();
 
@@ -91,7 +95,13 @@ public class BoardDetector {
 
         // ── 1. Board ────────────────────────────────────────────────────────
         Rect b = findSurface(procH);
-        if (b == null) {assignedTeams=null;return null;}
+        lucky = null;
+        if (b == null) {
+            assignedTeams=null;
+            // 4.11.0: no light-wood carrom board: maybe the Lucky Shot mini-game (dark red board, ring target).
+            try { lucky = LuckyShot.detect(hsv, gray, scale); } catch (Throwable t) { lucky = null; }
+            return null;
+        }
         float bw = b.width;
         TeamMatcher teams = new TeamMatcher(hsv);
         if(teams.freestyle)assignedTeams=null;

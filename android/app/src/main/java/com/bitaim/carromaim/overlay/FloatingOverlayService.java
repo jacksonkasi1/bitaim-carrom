@@ -652,6 +652,32 @@ public class FloatingOverlayService extends Service {
         @Override public long guideAt(){return latestGuideAt;}
     };
     private final com.bitaim.carromaim.cv.StrikerBaseline strikerBaseline=new com.bitaim.carromaim.cv.StrikerBaseline();
+    /** 4.11.0: Lucky Shot scene and its plan (screen pixels); scene null when no Lucky Shot board is visible. */
+    private final com.bitaim.carromaim.cv.LuckyAuto luckyAuto=new com.bitaim.carromaim.cv.LuckyAuto();
+    public void onLuckyShot(com.bitaim.carromaim.cv.LuckyShot.Scene scene,com.bitaim.carromaim.cv.LuckyShot.Plan plan,boolean planning){
+        // The game's aim dots feed the closed-loop aim of a held auto shot, as in carrom play.
+        if(scene!=null&&scene.guideDots>0&&!Float.isNaN(scene.guideX)){
+            latestGuide=new float[]{scene.guideX,scene.guideY,scene.guideDots,scene.striker.x,scene.striker.y};latestGuideAt=android.os.SystemClock.uptimeMillis();
+        }
+        runOnMain(() -> {
+            if(aimOverlayView==null)return;
+            aimOverlayView.setLuckyShot(scene,plan,planning);
+            if(!autoPlay.enabled()||com.bitaim.carromaim.capture.PcLink.connected()){if(scene==null)luckyAuto.reset();return;}
+            AutoPlayController.Action action=luckyAuto.update(scene,plan,planning,android.os.SystemClock.uptimeMillis());
+            String note=luckyAuto.consumeNote();if(note!=null){appendEvent(note);Log.i("BitAim/Lucky",note);}
+            if(scene!=null)aimOverlayView.setAutoStatus(luckyAuto.status());
+            if(action==null)return;
+            GameGestureService gestures=GameGestureService.INSTANCE;
+            aimOverlayView.setLuckyFiring(true); // our lines must not cover the game's aim dots during the hold
+            boolean sent=gestures!=null&&gestures.sendCorrected(action,aimSource,(success,aim)->{
+                runOnMain(()->{if(aimOverlayView!=null)aimOverlayView.setLuckyFiring(false);});
+                if(aim!=null)appendEvent(String.format(java.util.Locale.US,"LUCKY AIM initial=%.2f° final=%.2f° steps=%d dots=%d release=(%.0f,%.0f)",aim.initialDeg,aim.finalDeg,aim.steps,aim.dots,aim.x2,aim.y2));
+                runOnMain(()->luckyAuto.complete(success));
+            });
+            if(!sent){aimOverlayView.setLuckyFiring(false);luckyAuto.complete(false);appendEvent("LUCKY gesture not sent (game window or gesture service unavailable)");}
+        });
+    }
+
     public void onDetectedState(GameState s) {
         strikerBaseline.apply(s);
         com.bitaim.carromaim.cv.DiscSeparation.apply(s);
