@@ -136,6 +136,15 @@ public class AutoPlayRegression {
    check(e==null&&uc.status().startsWith("route not verified"),"An unverified route waits early ("+uc.status()+")");
    AutoPlayController.Action late=null;for(int i=0;i<40&&late==null;i++){g.frameId++;late=uc.update(g,ur,Float.NaN,206100+i*100);}
    check(late!=null&&!late.move,"Late in the turn the unverified route is played ("+uc.status()+")");}
+  {// 4.14.1: a route planned on a different board ("re-planning on the settled board") falls back after 8 s
+   GameState g=RouteRegression.state(500,850);RouteRegression.add(g,300,400,true);
+   ShotPlanner.Shot pr=RoutePlanner.best(g);check(pr!=null,"Fixture requires model route");
+   GameState other=RouteRegression.state(500,850);RouteRegression.add(other,330,430,true);
+   AutoPlayController pc=new AutoPlayController();pc.setEnabled(true);pc.setGoldReady(true);
+   AutoPlayController.Action e=null;for(int i=0;i<60&&e==null;i++){g.frameId++;e=pc.update(g,pr,Float.NaN,300000+i*100,other);}
+   check(e==null&&pc.status().contains("re-planning"),"A plan from another board waits early ("+pc.status()+")");
+   AutoPlayController.Action fb=null;for(int i=0;i<60&&fb==null;i++){g.frameId++;fb=pc.update(g,pr,Float.NaN,306100+i*100,other);}
+   check(fb!=null&&!fb.move,"After 8 s the fallback shot is played ("+pc.status()+")");}
   System.out.println("PASS: opt-in only, stable frames, pull geometry, one shot per turn, robustness gate, stale-plan rejection, slider verification, opponent-turn block, cancellation, stable gold scene, closed-loop aim correction");
  }
 }

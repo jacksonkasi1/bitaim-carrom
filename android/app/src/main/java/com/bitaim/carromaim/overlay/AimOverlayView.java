@@ -546,7 +546,10 @@ public class AimOverlayView extends View {
         GameState s;
         while((s=pendingPlan.getAndSet(null))!=null&&!plannerStopped&&!Thread.currentThread().isInterrupted()){
             PlanResult last=lastPlanned;
-            boolean same=last!=null&&sameScene(last.state,s);
+            // 4.14.1: sameScene tolerates 2 changed discs anywhere; a route is reused only when the discs along its own
+            // path are unchanged too (auto play's check). Otherwise auto play rejected the reused route as
+            // "re-planning on the settled board" while the planner kept reusing it (practice 02:05-02:30, 4 stalls).
+            boolean same=last!=null&&sameScene(last.state,s)&&(last.shot==null||com.bitaim.carromaim.cv.AutoPlayController.sameNearRoute(last.shot,last.state,s));
             if(same&&!last.quick){
                 // Unchanged board and striker: re-planning would only burn CPU and battery.
                 // 4.14.0: keep the frame the route was planned on. Tagging the reused route with the newest frame made

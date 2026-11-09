@@ -156,7 +156,12 @@ public final class AutoPlayController {
         // 4.9.1 (user 09:0x: "with autoplay it hits a weaker path; stop auto and within a second a stronger path appears;
         // the weak path has a blocker in the middle"): only fire a plan made on this settled board. A plan from a frame
         // where discs were still sliding can route through a disc that has since stopped in the way.
-        if(route!=null&&planned!=s&&!sameNearRoute(route,planned,s)){status="re-planning on the settled board";return null;}
+        if(route!=null&&planned!=s&&!sameNearRoute(route,planned,s)){
+            // 4.14.1 safety net: a plan that never matches the settled board must not cost the turn; after
+            // BOARD_CHANGED_FALLBACK_MS it is dropped and the no-route fallback shot is played.
+            if(turn<BOARD_CHANGED_FALLBACK_MS){status="re-planning on the settled board";return null;}
+            route=null;planned=s;
+        }
         if(!moved&&!userPlaced&&!goldReady&&turn<GOLD_WAIT_MS){status="finding the best striker spot (★)";return null;}
         // Live 00:00:55: re-armed mid-turn, the ★ search was not ready after 4 s and a 41% coin cushion was fired from
         // the centre; the ★ spot had an 81% direct pot. A weak shot from here waits for the ★ until relaxed mode.
@@ -326,7 +331,7 @@ public final class AutoPlayController {
     /** 4.9.3: the settled-board check looks only at discs near the route (striker leg, every disc leg, target to
      *  pocket). One flickering disc elsewhere kept "re-planning on the settled board" until the turn ran out (09:42,
      *  09:43). Near the route, every disc now must match the plan within 0.35 radius, and the striker too. */
-    static boolean sameNearRoute(ShotPlanner.Shot r,GameState planned,GameState now){
+    public static boolean sameNearRoute(ShotPlanner.Shot r,GameState planned,GameState now){
         if(planned==null||now==null||planned.striker==null||now.striker==null)return false;
         if(Math.hypot(planned.striker.pos.x-now.striker.pos.x,planned.striker.pos.y-now.striker.pos.y)>now.striker.radius*.35f)return false;
         java.util.List<float[]> legs=new java.util.ArrayList<>();
