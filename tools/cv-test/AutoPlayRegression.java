@@ -145,6 +145,17 @@ public class AutoPlayRegression {
    check(e==null&&pc.status().contains("re-planning"),"A plan from another board waits early ("+pc.status()+")");
    AutoPlayController.Action fb=null;for(int i=0;i<60&&fb==null;i++){g.frameId++;fb=pc.update(g,pr,Float.NaN,306100+i*100,other);}
    check(fb!=null&&!fb.move,"After 8 s the fallback shot is played ("+pc.status()+")");}
+  {// 4.14.2: a pot keeps the turn; the striker returns to the baseline without leaving the picture
+   GameState g=RouteRegression.state(500,850);RouteRegression.add(g,300,400,true);RouteRegression.add(g,700,400,true);
+   ShotPlanner.Shot br=RoutePlanner.best(g);check(br!=null,"Fixture requires model route");br.chancePercent=90;
+   AutoPlayController bc=new AutoPlayController();bc.setEnabled(true);bc.setGoldReady(true);
+   AutoPlayController.Action first=settle(bc,g,br,Float.NaN,400000);check(first!=null&&!first.move,"First shot fired");
+   bc.complete(true);
+   check(settle(bc,g,br,Float.NaN,406000)==null,"Unchanged board after the shot: no second shot");
+   g.coins.remove(g.coins.size()-1);g.striker.pos.x=540; // a disc went in, striker back on the baseline
+   ShotPlanner.Shot nr=RoutePlanner.best(g);check(nr!=null,"Fixture requires a second route");nr.chancePercent=90;
+   AutoPlayController.Action second=null;for(int i=0;i<80&&second==null;i++){g.frameId++;second=bc.update(g,nr,Float.NaN,410000+i*100);}
+   check(second!=null&&!second.move,"Extra turn after a pot is played ("+bc.status()+")");}
   System.out.println("PASS: opt-in only, stable frames, pull geometry, one shot per turn, robustness gate, stale-plan rejection, slider verification, opponent-turn block, cancellation, stable gold scene, closed-loop aim correction");
  }
 }

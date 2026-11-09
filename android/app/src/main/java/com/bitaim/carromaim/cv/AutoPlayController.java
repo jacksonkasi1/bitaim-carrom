@@ -35,7 +35,7 @@ public final class AutoPlayController {
     // inside the reachable range land at 0.8-0.97 of the distance, so a mild 0.85 gain plus a slower drag is used.
     /** Aim-correction time for a normal shot and for a hurried one (hurried shots after LATE_MS use a single drag). */
     /** With no route at all this far into the turn, a straight break is fired rather than losing the turn. */
-    static final long BREAK_FALLBACK_MS=9000, BOARD_CHANGED_FALLBACK_MS=8000;
+    static final long BREAK_FALLBACK_MS=9000, BOARD_CHANGED_FALLBACK_MS=8000, BONUS_TURN_MS=4000;
     static final int AIM_BUDGET_MS=3000, HURRIED_AIM_BUDGET_MS=2300; static final long LATE_MS=14000;
     // Practice 22:58:57: a hurried shot read a 4.2° aim error but the 1.5 s budget allowed no correction step.
     private long turnStart=-1;
@@ -64,6 +64,7 @@ public final class AutoPlayController {
     private boolean lastWasMove;
     private ShotPlanner.Shot lastShotRoute;
     /** Last slide {fromX, toX, sliderY} and last shot gesture {x1,y1,x2,y2}; NaN when none. */
+    private float[][] shotCoins;
     private float[] lastSlide={Float.NaN,Float.NaN,Float.NaN},lastGesture={Float.NaN,Float.NaN,Float.NaN,Float.NaN};
     public float[] lastSlide(){return lastSlide.clone();}
     public float[] lastGesture(){return lastGesture.clone();}
@@ -124,7 +125,21 @@ public final class AutoPlayController {
         // radius while BitAim has not slid it this turn was placed by the player.
         if(!moved&&!busy&&!Float.isNaN(turnStrikerX)&&Math.abs(s.striker.pos.x-turnStrikerX)>s.striker.radius)userPlaced=true;
         long turn=now-turnStart;boolean hurry=turn>=HURRY_MS;turnNow=now;
-        if(shotSent){status="shot sent, waiting for the board to settle";return null;}
+        if(shotSent){
+            // 4.14.2 (practice 02:43, 02:46): a pot keeps the turn and the striker returns to our baseline without ever
+            // leaving the picture, so the "striker absent" reset never came and the bonus turn ran out. The striker
+            // back on the baseline row, still, BONUS_TURN_MS after the release = our next turn.
+            boolean onBaseline=!Float.isNaN(lastGesture[1])&&Math.abs(s.striker.pos.y-lastGesture[1])<s.striker.radius*.5f;
+            boolean still=!Float.isNaN(lastX)&&Math.hypot(s.striker.pos.x-lastX,s.striker.pos.y-lastY)<s.striker.radius*.3f;
+            lastX=s.striker.pos.x;lastY=s.striker.pos.y;
+            boolean boardChanged=shotCoins!=null&&anyDiscChanged(shotCoins,s);
+            if(onBaseline&&still&&boardChanged&&now-lastAction>=BONUS_TURN_MS){
+                shotSent=false;moved=false;slides=0;pendingX=Float.NaN;slideRoute=null;stable=0;lastCoins=null;
+                turnStart=now;userPlaced=false;turnStrikerX=s.striker.pos.x;lastRouteAt=now;lastAction=now-2500;
+                status="extra turn: planning";return null;
+            }
+            status="shot sent, waiting for the board to settle";return null;
+        }
         // After a slide only a short settle is needed; the longer cooldown is for the turn after a shot.
         if(now-lastAction<(lastWasMove?MOVE_SETTLE_MS:2500)){status=lastWasMove?"striker moved, settling":"waiting after last action";return null;}
         if(!Float.isNaN(pendingX)){
@@ -221,7 +236,7 @@ public final class AutoPlayController {
             }
             if(bl>.5f&&by<0){
                 float distance=w*breakPull;
-                lastShotRoute=null;lastGesture=new float[]{sx,sy,sx-bx/bl*distance,sy-by/bl*distance};slideRoute=null;
+                lastShotRoute=null;shotCoins=snapshot(s);lastGesture=new float[]{sx,sy,sx-bx/bl*distance,sy-by/bl*distance};slideRoute=null;
                 busy=shotSent=true;lastAction=now;lastWasMove=false;stable=0;status=midGame?"no route: medium shot at own discs":"no route: break shot at the discs";
                 return new Action(false,sx,sy,sx-bx/bl*distance,sy-by/bl*distance,turn<LATE_MS?HURRIED_AIM_BUDGET_MS:0);
             }
@@ -250,6 +265,7 @@ public final class AutoPlayController {
         }
         float distance=w*Math.max(.06f,Math.min(.30f,chosenPull));
         lastShotRoute=route;
+        shotCoins=snapshot(s);
         lastGesture=new float[]{sx,sy,sx-dx/length*distance,sy-dy/length*distance};
         slideRoute=null;
         busy=shotSent=true;lastAction=now;lastWasMove=false;stable=0;status=(hurry?"shooting (time running out): ":"shooting: ")+RoutePlanner.label(route);
@@ -356,6 +372,12 @@ public final class AutoPlayController {
         if(planned.striker==null||now.striker==null||Math.hypot(planned.striker.pos.x-now.striker.pos.x,planned.striker.pos.y-now.striker.pos.y)>now.striker.radius*.35f)return false;
         for(Coin c:now.coins){boolean ok=false;for(Coin p:planned.coins)if(Math.hypot(p.pos.x-c.pos.x,p.pos.y-c.pos.y)<c.radius*.35f){ok=true;break;}if(!ok)return false;}
         return true;
+    }
+    /** Strict: a disc gone, added or moved by more than half a radius since {@code prev}. */
+    static boolean anyDiscChanged(float[][] prev,GameState s){
+        if(prev.length!=s.coins.size())return true;
+        for(Coin c:s.coins){boolean found=false;for(float[] p:prev)if(Math.hypot(p[0]-c.pos.x,p[1]-c.pos.y)<c.radius*.5f){found=true;break;}if(!found)return true;}
+        return false;
     }
     private static float[][] snapshot(GameState s){float[][] out=new float[s.coins.size()][];for(int i=0;i<out.length;i++){Coin c=s.coins.get(i);out[i]=new float[]{c.pos.x,c.pos.y,c.radius};}return out;}
     /** At most two discs (or 15% on a busy board) may flicker or shift; the rest must be within 0.6 radius of before. */
