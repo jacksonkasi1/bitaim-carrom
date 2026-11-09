@@ -38,6 +38,8 @@ if($LASTEXITCODE -ne 0){throw 'LuckyShotRegression (12:12 frame) failed'}
 if($LASTEXITCODE -ne 0){throw 'LuckyCornerRegression failed'}
 & "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp CoveredBoardRegression "$root/test-results/practice-board-clean.png"
 if($LASTEXITCODE -ne 0){throw 'CoveredBoardRegression failed'}
+& "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp RailCoinRegression "$root/test-results/lost-match-rail-coin.png"
+if($LASTEXITCODE -ne 0){throw 'RailCoinRegression failed'}
 & "$jdk/bin/java.exe" -cp $cp DiscMemoryRegression "$PSScriptRoot/fixtures/hidden-white-233351.jsonl"
 if($LASTEXITCODE -ne 0){throw 'DiscMemoryRegression failed'}
 & "$jdk/bin/java.exe" -cp $cp ShotLoggerRegression

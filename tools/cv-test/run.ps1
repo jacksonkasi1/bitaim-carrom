@@ -38,6 +38,7 @@ $sources += "$here/LuckyShotRegression.java"
 $sources += "$here/CoveredBoardRegression.java"
 $sources += "$here/DiscMemoryRegression.java"
 $sources += "$here/LuckyCornerRegression.java"
+$sources += "$here/RailCoinRegression.java"
 & "$jdk/bin/javac.exe" -encoding UTF-8 -d "$here/classes" -cp $jar @sources
 if ($LASTEXITCODE -ne 0) { throw 'CV test compilation failed' }
 Push-Location $here
