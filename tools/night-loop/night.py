@@ -16,6 +16,7 @@ STATE = 'D:/Tools/tmp/loop/night-state.json'
 STOP_AT = sys.argv[1] if len(sys.argv) > 1 else '0540'
 MODES = ['disc', 'carrom']          # alternate practice modes each game
 STAR = (126, 492)
+MATCH_MAX_S = 15 * 60               # user: a match must end within 15 min, else restart
 STALL_S = 60                        # user: restart after 1 min without any shot (ours or the computer's)                   # BitAim floating star (full-res px)
 
 def log(*a):
@@ -133,7 +134,7 @@ def main():
     if os.path.exists(STATE):
         try: st.update(json.load(open(STATE)))
         except Exception: pass
-    last_pull = time.time(); unknown = 0; in_game_since = None; away = 0
+    last_pull = time.time(); unknown = 0; in_game_since = None; away = 0; match_start = time.time()
     import ctypes; ctypes.windll.kernel32.SetThreadExecutionState(0x80000001)   # keep the PC awake while this runs
     log('night supervisor start, stop at', STOP_AT)
     while True:
@@ -161,6 +162,9 @@ def main():
             unknown = 0
             in_game_since = in_game_since or time.time()
             quiet = min(age, time.time() - in_game_since)   # a new game has no shot file yet
+            if match_start and time.time() - match_start > MATCH_MAX_S:
+                log('match over', MATCH_MAX_S // 60, 'min, restarting'); restart_carrom(); in_game_since = None; match_start = None
+                time.sleep(5); continue
             if quiet > STALL_S:
                 log('no shot for', int(quiet), 's, restarting'); restart_carrom(); in_game_since = None
             time.sleep(10); continue
@@ -181,7 +185,7 @@ def main():
             m = MODES[st['mode'] % len(MODES)]
             tap(540, 969 if m == 'disc' else 1389)                     # Disc Pool / Carrom
             st['mode'] += 1; st['games'] += 1; json.dump(st, open(STATE, 'w'))
-            log('started practice game', st['games'], m); time.sleep(8)
+            log('started practice game', st['games'], m); match_start = time.time(); time.sleep(8)
             if classify(screen()) == 'game': arm()
             continue
         unknown += 1

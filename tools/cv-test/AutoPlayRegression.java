@@ -77,7 +77,7 @@ public class AutoPlayRegression {
   c.complete(true);s.frameId++;c.update(s,r,Float.NaN,56000);check(c.enabled(),"A slider that lands off target must not disarm auto play");
   c.setEnabled(true);s.strikerDetected=false;check(settle(c,s,r,700,60000)==null,"Opponent turn must not dispatch gestures");
   s.strikerDetected=true;c.setEnabled(true);c.complete(false);check(c.enabled(),"One cancelled gesture retries");
-  c.complete(false);c.complete(false);check(!c.enabled()&&c.status().contains("stopped"),"Three failed gestures in a row disarm with a reason");
+  c.complete(false);c.complete(false);check(c.enabled()&&c.status().contains("paused"),"Three failed gestures in a row pause (4.14.0: never disarm by itself)");
   GoldSceneLock lock=new GoldSceneLock();int id=lock.update(s,target);
   for(int i=0;i<60;i++){target.pos.x=300+(i%2==0?2:-2);s.striker.pos.x=200+i*8;check(lock.update(s,target)==id,"Slider movement and small coin jitter must keep gold search fixed");}
   target.pos.x=340;check(lock.update(s,target)!=id,"Real coin movement must invalidate gold scene");
@@ -127,6 +127,15 @@ public class AutoPlayRegression {
    check(early==null&&ch.status().startsWith("board changed"),"Early in the turn a changed board waits ("+ch.status()+")");
    AutoPlayController.Action fb=null;for(int i=0;i<40&&fb==null;i++){g.frameId++;fb=ch.update(g,sr,Float.NaN,106100+i*100);}
    check(fb!=null&&!fb.move,"A board that never settles gets the fallback shot after 8 s ("+ch.status()+")");}
+  {// 4.14.0: a route the physics check could not confirm is played late in the turn instead of losing it
+   GameState g=RouteRegression.state(500,850);RouteRegression.add(g,300,400,true);
+   ShotPlanner.Shot ur=RoutePlanner.best(g);check(ur!=null,"Fixture requires model route");
+   ur.modelValidated=false;ur.chancePercent=90;
+   AutoPlayController uc=new AutoPlayController();uc.setEnabled(true);uc.setGoldReady(true);
+   AutoPlayController.Action e=null;for(int i=0;i<60&&e==null;i++){g.frameId++;e=uc.update(g,ur,Float.NaN,200000+i*100);}
+   check(e==null&&uc.status().startsWith("route not verified"),"An unverified route waits early ("+uc.status()+")");
+   AutoPlayController.Action late=null;for(int i=0;i<40&&late==null;i++){g.frameId++;late=uc.update(g,ur,Float.NaN,206100+i*100);}
+   check(late!=null&&!late.move,"Late in the turn the unverified route is played ("+uc.status()+")");}
   System.out.println("PASS: opt-in only, stable frames, pull geometry, one shot per turn, robustness gate, stale-plan rejection, slider verification, opponent-turn block, cancellation, stable gold scene, closed-loop aim correction");
  }
 }

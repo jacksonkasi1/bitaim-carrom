@@ -64,6 +64,8 @@ public class FloatingOverlayService extends Service {
     public boolean isAutoPlayEnabled(){return autoPlay.enabled();}
     public void disableAutoPlay(){setAutoPlay(false);}
     public void setAutoPlay(boolean enabled){runOnMain(()->{
+        // 4.14.0 (user: "make auto by default"): remember the player's choice; the overlay re-arms it after a restart.
+        getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).edit().putBoolean("autoPlayOn",enabled).apply();
         if(enabled){overlayMode=MODE_AUTO;applyOverlayMode();}
         autoPlay.setEnabled(enabled);if(aimOverlayView!=null)aimOverlayView.setAutoPlayArmed(enabled);
         updateColourLockLabel();
@@ -83,8 +85,9 @@ public class FloatingOverlayService extends Service {
         long now=android.os.SystemClock.uptimeMillis();
         ScreenCaptureService capture=ScreenCaptureService.INSTANCE;
         boolean local=state!=null&&state.board!=null&&state.strikerDetected&&state.teamKnown;
-        if(!local){localTurnSince=-1;noRouteSince=-1;noRouteReported=stallReported=false;if(capture!=null)capture.clearSuggestion();return;}
-        if(localTurnSince<0)localTurnSince=now;
+        if(!local){if(localTurnSince>=0)reportLineStability(now);localTurnSince=-1;noRouteSince=-1;noRouteReported=stallReported=false;if(capture!=null)capture.clearSuggestion();return;}
+        if(localTurnSince<0){localTurnSince=now;lineBlinks=lineJumps=0;lineWasShown=false;lineHiddenMs=0;lineHiddenSince=-1;lineCoinX=Float.NaN;}
+        trackLineStability(route,now);
         if(route!=null&&route.strikerPath.size()>=2&&capture!=null){
             float dx=route.strikerPath.get(1).x-state.striker.pos.x,dy=route.strikerPath.get(1).y-state.striker.pos.y,l=(float)Math.hypot(dx,dy);
             if(l>0)capture.setSuggestion(dx/l,dy/l,route.coin.pos.x,route.coin.pos.y,route.pocket==null?0f:route.pocket.x,route.pocket==null?0f:route.pocket.y,com.bitaim.carromaim.cv.RoutePlanner.label(route));
@@ -97,6 +100,23 @@ public class FloatingOverlayService extends Service {
         }else noRouteSince=-1;
         if(autoPlay.enabled()&&!stallReported&&now-localTurnSince>10000&&(lastShotActionAt<localTurnSince)){stallReported=true;
             reportIncident("auto-stall","{\"status\":\""+autoPlay.status().replace("\"","'")+"\",\"turnMs\":"+(now-localTurnSince)+"}");}
+    }
+    // 4.14.0 (user P3: "no more blinking lines"): per turn, how often the drawn route disappeared and came back
+    // (blink) or jumped to another coin (jump), and how long it was hidden after first showing. Logged at turn end.
+    private int lineBlinks,lineJumps;private boolean lineWasShown;private long lineHiddenMs,lineHiddenSince=-1;private float lineCoinX=Float.NaN,lineCoinY;
+    private void trackLineStability(com.bitaim.carromaim.cv.ShotPlanner.Shot route,long now){
+        boolean shown=route!=null&&route.coin!=null;
+        if(shown){
+            if(lineHiddenSince>=0){lineBlinks++;lineHiddenMs+=now-lineHiddenSince;lineHiddenSince=-1;}
+            if(!Float.isNaN(lineCoinX)&&Math.hypot(route.coin.pos.x-lineCoinX,route.coin.pos.y-lineCoinY)>route.coin.radius*1.5f)lineJumps++;
+            lineCoinX=route.coin.pos.x;lineCoinY=route.coin.pos.y;lineWasShown=true;
+        }else if(lineWasShown&&lineHiddenSince<0)lineHiddenSince=now;
+    }
+    private void reportLineStability(long now){
+        if(!lineWasShown)return;
+        long hidden=lineHiddenMs+(lineHiddenSince>=0?now-lineHiddenSince:0);
+        appendEvent(String.format(java.util.Locale.US,"LINES turnMs=%d blinks=%d jumps=%d hiddenMs=%d auto=%b",now-localTurnSince,lineBlinks,lineJumps,hidden,autoPlay.enabled()));
+        if(lineBlinks>=2||lineJumps>=3)reportIncident("line-blink",String.format(java.util.Locale.US,"{\"blinks\":%d,\"jumps\":%d,\"hiddenMs\":%d}",lineBlinks,lineJumps,hidden));
     }
     private static int countOwn(GameState s){int n=0;for(Coin c:s.coins)if(c.targetEligible)n++;return n;}
     /** Called by the overlay when drawing or planning throws. */
@@ -228,6 +248,7 @@ public class FloatingOverlayService extends Service {
             setupFloatingButton();
             applyOverlayMode();
             applySavedSettings();
+            if(getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).getBoolean("autoPlayOn",false))setAutoPlay(true);
         } catch (Throwable t) {
             // e.g. "Display over other apps" was revoked — stop cleanly, don't crash
             Log.e("BitAim/Overlay", "Could not add overlay windows: " + t.getMessage());

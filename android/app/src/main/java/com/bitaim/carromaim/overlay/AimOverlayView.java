@@ -549,7 +549,10 @@ public class AimOverlayView extends View {
             boolean same=last!=null&&sameScene(last.state,s);
             if(same&&!last.quick){
                 // Unchanged board and striker: re-planning would only burn CPU and battery.
-                PlanResult result=new PlanResult();result.state=s;
+                // 4.14.0: keep the frame the route was planned on. Tagging the reused route with the newest frame made
+                // auto play compare the route's board signature with a jittered frame ("board changed, re-planning"
+                // until the turn ran out: 98 status lines, 12 stalls, 2 shots in 14 practice matches, 2026-11-10).
+                PlanResult result=new PlanResult();result.state=last.state;
                 result.shot=last.shot;result.selected=last.selected;result.position=last.position;result.alternatives=last.alternatives;
                 final PlanResult done=result;
                 post(() -> {if(!plannerStopped)applyPlan(done);});
@@ -559,7 +562,7 @@ public class AimOverlayView extends View {
             // more chance estimates) if no newer board arrived meanwhile. Safe style is one (already quick) pass.
             // 4.12.0: the speed level decides: quick pass only (Ultra, Max), quick then full in Pro style (Fast), or
             // the full pass every time (Deep).
-            if(com.bitaim.carromaim.cv.SpeedProfile.quickOnly()){if(!same)plan(s,true);else{PlanResult r=new PlanResult();r.state=s;r.shot=last.shot;r.selected=last.selected;r.position=last.position;r.alternatives=last.alternatives;r.quick=true;final PlanResult d=r;post(()->{if(!plannerStopped)applyPlan(d);});}continue;}
+            if(com.bitaim.carromaim.cv.SpeedProfile.quickOnly()){if(!same)plan(s,true);else{PlanResult r=new PlanResult();r.state=last.state;r.shot=last.shot;r.selected=last.selected;r.position=last.position;r.alternatives=last.alternatives;r.quick=true;final PlanResult d=r;post(()->{if(!plannerStopped)applyPlan(d);});}continue;}
             boolean twoPass=RoutePlanner.proStyle&&com.bitaim.carromaim.cv.SpeedProfile.twoPass();
             if(!(same&&last.quick)){
                 plan(s,twoPass);
@@ -621,7 +624,9 @@ public class AimOverlayView extends View {
 
     // 4.10.7 (user: lines blink): the last frame that had a board and our striker, kept briefly for drawing.
     private GameState lastGoodState;private long lastGoodMs;
-    private static final long HOLD_LINES_MS=700;
+    // 4.14.0 (P3 blinking): 700 -> 1500 ms. A finger on the striker while aiming hides it for longer than 0.7 s;
+    // the discs must still match (sameDiscs), so a real change still clears the lines.
+    private static final long HOLD_LINES_MS=1500;
     private void drawAuto(Canvas canvas, GameState s) {
         long nowMs=android.os.SystemClock.uptimeMillis();
         boolean good=s!=null&&s.board!=null&&s.striker!=null&&s.strikerDetected;

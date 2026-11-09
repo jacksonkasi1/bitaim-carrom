@@ -26,7 +26,7 @@ public final class AutoPlayController {
     static final float MIN_TOLERANCE=.25f; static final int MIN_STRESS=5, MAX_FAILURES=3;
     private boolean goldReady=true;
     /** Turn clock (the game gives only a few seconds): skip the ★ wait after GOLD_WAIT_MS, relax gates after HURRY_MS. */
-    static final long GOLD_WAIT_MS=4000, HURRY_MS=7000, MOVE_SETTLE_MS=900, MOVE_VERIFY_MS=1500; static final int STEADY_FRAMES=4;
+    static final long GOLD_WAIT_MS=4000, HURRY_MS=7000, MOVE_SETTLE_MS=900, MOVE_VERIFY_MS=1500; static final int STEADY_FRAMES=4, STEADY_FRAMES_AFTER_SLIDE=2;
     /** Debug recorder, 40 slides (2026-11-07): the striker always landed at ~0.75 of the dragged distance (median
      *  0.747, both directions, 35-295 px). The slide drag is scaled by 1/0.75 and, when it still lands more than a
      *  striker radius off, one corrective slide covers the remainder (before the relaxed-gate time). */
@@ -93,11 +93,14 @@ public final class AutoPlayController {
     public String status(){return status;}
     public void setEnabled(boolean value){lastSlide=new float[]{Float.NaN,Float.NaN,Float.NaN};slideRoute=null;enabled=value;busy=shotSent=moved=false;slides=0;stable=absent=failures=0;turnStart=-1;lastX=Float.NaN;pendingX=Float.NaN;lastCoins=null;lastFrame=-1;status=value?"starting":"";}
     public void setPull(float fraction){pull=Math.max(.06f,Math.min(.25f,fraction));}
-    /** Gesture result. Three failed or cancelled gestures in a row disarm auto play. */
+    /** Gesture result. Three failed or cancelled gestures in a row pause auto play for a few seconds. */
+    private boolean pauseRequested;private long resumeAt=-1;static final long PAUSE_AFTER_FAILURES_MS=5000;
     public void complete(boolean success){
         busy=false;
         if(success){failures=0;return;}
-        if(++failures>=MAX_FAILURES){enabled=false;status="stopped: gesture failed "+failures+" times";}
+        // 4.14.0 (user: "auto mode keeps getting off"): failed gestures (a banner or a finger cancels the swipe) pause
+        // auto play for PAUSE_AFTER_FAILURES_MS instead of disarming it. Only the player turns it off.
+        if(++failures>=MAX_FAILURES){failures=0;shotSent=false;pauseRequested=true;status="paused: gesture failed "+MAX_FAILURES+" times, retrying";}
         else{shotSent=false;status="gesture cancelled, retrying";}
     }
     public Action update(GameState s,ShotPlanner.Shot route,float goldX,long now){return update(s,route,goldX,now,s);}
@@ -105,6 +108,8 @@ public final class AutoPlayController {
     public Action update(GameState s,ShotPlanner.Shot route,float goldX,long now,GameState planned){
         if(planned==null)planned=s;
         if(!enabled||busy)return null;
+        if(pauseRequested){pauseRequested=false;resumeAt=now+PAUSE_AFTER_FAILURES_MS;}
+        if(now<resumeAt)return null;
         if(s!=null){if(s.frameId==lastFrame)return null;lastFrame=s.frameId;}
         if(s==null||s.board==null||!s.teamKnown||s.striker==null||!s.strikerDetected){
             // One or two missed striker frames (end circle, finger, animation) must not reset the steady count.
@@ -145,7 +150,9 @@ public final class AutoPlayController {
         // disc count, route identity) reset every frame on a dense opening, so auto play never got past this step.
         boolean same=!Float.isNaN(lastX)&&Math.hypot(s.striker.pos.x-lastX,s.striker.pos.y-lastY)<s.striker.radius*.30f&&layoutSteady(lastCoins,s); // practice striker has an animated glow ring
         stable=same?stable+1:0;lastX=s.striker.pos.x;lastY=s.striker.pos.y;lastCoins=snapshot(s);
-        if(stable<STEADY_FRAMES){status="waiting for a steady board ("+stable+"/"+STEADY_FRAMES+")";return null;}
+        // 4.14.0: after our own slide only the striker moved; 2 steady frames are enough (about 0.35 s saved per slide).
+        int needSteady=moved?STEADY_FRAMES_AFTER_SLIDE:STEADY_FRAMES;
+        if(stable<needSteady){status="waiting for a steady board ("+stable+"/"+needSteady+")";return null;}
         // 4.9.1 (user 09:0x: "with autoplay it hits a weaker path; stop auto and within a second a stronger path appears;
         // the weak path has a blocker in the middle"): only fire a plan made on this settled board. A plan from a frame
         // where discs were still sliding can route through a disc that has since stopped in the way.
@@ -174,6 +181,10 @@ public final class AutoPlayController {
                 &&route.worldSignature==PhysicsVerifier.signature(planned)&&RoutePlanner.compare(route,ready)<0)ready=null;
         if(ready!=null){route=ready;planned=null;}
         String reject=ready!=null?null:hurry?rejectHurried(route,planned):reject(route,planned);
+        // 4.14.0 (user: "one single black coin, auto keeps saying no verified path"): a geometric route the physics
+        // check could not confirm was never played and the fallback needs no route at all, so the turn ran out.
+        // Late in the turn the unverified route is played: an aimed attempt beats a lost turn.
+        if(reject!=null&&reject.startsWith("route not verified")&&route!=null&&route.strikerPath.size()>=2&&route.coin!=null&&turn>=BREAK_FALLBACK_MS)reject=null;
         // Opening cluster with no route (practice 01:31: 5 s of ★ search found nothing, then a rushed shot): break
         // at once instead of waiting for the fallback time.
         // 4.9.3 (practice 09:42:06-11): the break fired while a fresh plan was still being computed (route briefly
