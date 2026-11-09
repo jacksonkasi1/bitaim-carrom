@@ -1,0 +1,30 @@
+13:11:13.590 status waiting for your turn
+13:11:14.647 status waiting for the board
+13:11:31.749 status waiting for your turn
+13:11:33.360 status waiting for the board
+13:11:34.904 status waiting for your turn
+13:12:07.944 status waiting for a steady board (0/4)
+13:12:08.143 status waiting for a steady board (1/4)
+13:12:08.359 status waiting for a steady board (2/4)
+13:12:08.542 status waiting for a steady board (3/4)
+13:12:08.741 status no route from here (6 s to relaxed mode)
+13:12:08.965 status finding the best striker spot (★)
+13:12:09.259 status shooting: Direct route
+13:12:09.263 SHOT from (539,1573) to (734,1715) shooting: Direct route
+13:12:11.291 AIM initial=-0.47° final=0.18° steps=1 dots=16 release=(733,1717)
+13:12:11.298 status shot sent, waiting for the board to settle
+13:12:11.415 status waiting for your turn
+13:12:11.581 status shot sent, waiting for the board to settle
+13:12:13.390 status waiting for your turn
+13:12:13.725 status shot sent, waiting for the board to settle
+13:12:14.420 status waiting for your turn
+13:12:24.000 status waiting for a steady board (0/4)
+13:12:24.183 status waiting for your turn
+13:12:24.415 status waiting for a steady board (0/4)
+13:12:25.095 status waiting for your turn
+13:12:36.921 status waiting for a steady board (0/4)
+13:12:37.101 status waiting for your turn
+13:13:17.452 status waiting for a steady board (0/4)
+13:13:17.612 status waiting for your turn
+13:13:17.829 status waiting for a steady board (0/4)
+13:13:18.251 status waiting for your turn

@@ -1,0 +1,45 @@
+15:52:24.974 status waiting for your turn
+15:52:25.108 status waiting for the board
+15:52:27.810 status waiting for a steady board (0/4)
+15:52:28.080 status waiting for a steady board (1/4)
+15:52:28.263 status waiting for a steady board (0/4)
+15:52:28.413 status waiting for your turn
+15:52:28.944 status waiting for the board
+15:52:44.286 status waiting for a steady board (0/4)
+15:52:44.468 status waiting for a steady board (1/4)
+15:52:44.617 status waiting for your turn
+15:52:45.365 status waiting for the board
+15:52:53.601 status waiting for your turn
+15:52:58.980 status waiting for the board
+15:53:00.607 status waiting for your turn
+15:53:04.990 status waiting for the board
+15:53:11.768 status waiting for a steady board (0/4)
+15:53:11.964 status waiting for a steady board (1/4)
+15:53:12.129 status waiting for a steady board (2/4)
+15:53:12.312 status waiting for your turn
+15:53:12.729 status waiting for the board
+15:53:15.905 status waiting for a steady board (0/4)
+15:53:16.115 status waiting for a steady board (1/4)
+15:53:16.330 status waiting for your turn
+15:53:16.679 status waiting for the board
+15:53:19.839 status waiting for a steady board (0/4)
+15:53:20.166 status waiting for your turn
+15:53:20.599 status waiting for the board
+15:53:22.226 status waiting for a steady board (0/4)
+15:53:22.391 status waiting for a steady board (1/4)
+15:53:22.556 status waiting for a steady board (2/4)
+15:53:22.840 status waiting for a steady board (3/4)
+15:53:23.045 status no route from here (6 s to relaxed mode)
+15:53:23.388 status no route from here (5 s to relaxed mode)
+15:53:23.754 status finding the best striker spot (★)
+15:53:24.499 status shooting: Open paths +2 (model)
+15:53:24.502 SHOT from (543,1573) to (653,1810) shooting: Open paths +2 (model)
+15:53:26.508 AIM initial=-2.99° final=-0.29° steps=1 dots=19 release=(641,1815)
+15:53:26.526 status shot sent, waiting for the board to settle
+15:53:26.796 status waiting for your turn
+15:53:28.915 status waiting for the board
+15:53:30.609 status waiting for your turn
+15:53:36.455 status waiting for the board
+15:53:38.281 status waiting for a steady board (0/4)
+15:53:38.438 status waiting for your turn
+15:53:39.313 status waiting for the board

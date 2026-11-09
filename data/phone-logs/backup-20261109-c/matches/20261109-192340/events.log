@@ -1,0 +1,22 @@
+19:26:30.197 status waiting for your turn
+19:26:40.768 status waiting for a steady board (0/4)
+19:26:40.965 status waiting for a steady board (1/4)
+19:26:41.148 status waiting for a steady board (2/4)
+19:26:41.332 status waiting for a steady board (3/4)
+19:26:41.497 status moving striker to ★
+19:26:41.501 SLIDE from (540,2110) to (727,2110) moving striker to ★
+19:26:42.679 status moving striker
+19:26:42.858 status correcting striker spot (★)
+19:26:42.862 SLIDE_LANDED start=540.1 target=693.7 finger=187.4 landed=708.9 off=15.2
+19:26:42.865 SLIDE from (709,2110) to (705,2110) correcting striker spot (★)
+19:26:44.005 status waiting for a steady board (0/4)
+19:26:44.010 SLIDE_LANDED start=708.9 target=693.7 finger=-4.0 landed=703.2 off=9.5
+19:26:44.170 status waiting for a steady board (1/4)
+19:26:44.352 status waiting for a steady board (2/4)
+19:26:44.519 status waiting for a steady board (3/4)
+19:26:44.686 status shooting: Direct route
+19:26:44.694 SHOT from (717,1572) to (664,1727) shooting: Direct route
+19:26:45.875 AIM initial=-6.48° final=-6.48° steps=0 dots=15 release=(664,1727)
+19:26:45.896 status shot sent, waiting for the board to settle
+19:26:46.799 status waiting for your turn
+19:31:06.192 INCIDENT no-route {"coins":12,"own":12,"striker":[512,1572],"colourKey":0,"queenRequired":false}

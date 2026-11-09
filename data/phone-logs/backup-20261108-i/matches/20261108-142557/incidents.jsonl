@@ -1,0 +1,5 @@
+{"t":1794128292605,"type":"auto-stall","id":"incident-20261108-142812-auto-stall","details":{"status":"board changed, re-planning","turnMs":10061}}
+{"t":1794128399240,"type":"auto-stall","id":"incident-20261108-142959-auto-stall","details":{"status":"board changed, re-planning","turnMs":10162}}
+{"t":1794128422796,"type":"no-route","id":"incident-20261108-143022-no-route","details":{"coins":14,"own":7,"striker":[529,1573],"colourKey":2,"queenRequired":false}}
+{"t":1794128568019,"type":"no-route","id":"incident-20261108-143248-no-route","details":{"coins":5,"own":3,"striker":[521,1573],"colourKey":2,"queenRequired":false}}
+{"t":1794128595189,"type":"no-route","id":"incident-20261108-143315-no-route","details":{"coins":3,"own":1,"striker":[262,1571],"colourKey":2,"queenRequired":false}}

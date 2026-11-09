@@ -1,0 +1,44 @@
+14:27:53.387 status waiting for a steady board (0/4)
+14:27:53.577 status waiting for a steady board (1/4)
+14:27:53.807 status waiting for a steady board (2/4)
+14:27:54.007 status waiting for a steady board (3/4)
+14:27:54.216 status no route from here (6 s to relaxed mode)
+14:27:54.406 status finding the best striker spot (★)
+14:27:54.920 status board changed, re-planning (5 s to relaxed mode)
+14:27:55.484 status board changed, re-planning (4 s to relaxed mode)
+14:27:56.448 status board changed, re-planning (3 s to relaxed mode)
+14:27:56.663 status waiting for your turn
+14:27:56.947 status finding the best striker spot (★)
+14:27:57.195 status waiting for your turn
+14:27:57.378 status board changed, re-planning (2 s to relaxed mode)
+14:27:58.391 status board changed, re-planning (1 s to relaxed mode)
+14:27:59.524 status board changed, re-planning (0 s to relaxed mode)
+14:27:59.790 status finding a better striker spot (★)
+14:28:00.118 status re-planning on the settled board
+14:28:01.013 status board changed, re-planning
+14:28:02.160 status waiting for your turn
+14:28:02.343 status board changed, re-planning
+14:28:12.405 INCIDENT auto-stall {"status":"board changed, re-planning","turnMs":10061}
+14:28:49.081 status waiting for your turn
+14:29:48.643 status waiting for a steady board (0/4)
+14:29:48.919 status waiting for a steady board (1/4)
+14:29:49.368 status waiting for a steady board (0/4)
+14:29:49.734 status waiting for a steady board (1/4)
+14:29:50.148 status waiting for a steady board (2/4)
+14:29:50.563 status waiting for a steady board (3/4)
+14:29:50.863 status board changed, re-planning (4 s to relaxed mode)
+14:29:51.859 status board changed, re-planning (3 s to relaxed mode)
+14:29:52.821 status board changed, re-planning (2 s to relaxed mode)
+14:29:53.901 status board changed, re-planning (1 s to relaxed mode)
+14:29:54.883 status board changed, re-planning (0 s to relaxed mode)
+14:29:57.759 status board changed, re-planning
+14:29:58.798 INCIDENT auto-stall {"status":"board changed, re-planning","turnMs":10162}
+14:29:59.462 status waiting for your turn
+14:29:59.911 status board changed, re-planning
+14:30:02.419 status re-planning on the settled board
+14:30:03.132 status board changed, re-planning
+14:30:04.310 status waiting for a steady board (0/4)
+14:30:04.626 status waiting for your turn
+14:30:22.575 INCIDENT no-route {"coins":14,"own":7,"striker":[529,1573],"colourKey":2,"queenRequired":false}
+14:32:47.315 INCIDENT no-route {"coins":5,"own":3,"striker":[521,1573],"colourKey":2,"queenRequired":false}
+14:33:14.641 INCIDENT no-route {"coins":3,"own":1,"striker":[262,1571],"colourKey":2,"queenRequired":false}

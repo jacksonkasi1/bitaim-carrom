@@ -1,0 +1,2 @@
+{"t":1794217479840,"type":"no-route","id":"incident-20261109-151439-no-route","details":{"coins":12,"own":0,"striker":[541,1573],"colourKey":1,"queenRequired":false}}
+{"t":1794217582699,"type":"auto-stall","id":"incident-20261109-151622-auto-stall","details":{"status":"no route from here (2 s to relaxed mode)","turnMs":10022}}

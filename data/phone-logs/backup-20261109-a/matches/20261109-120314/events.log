@@ -1,0 +1,11 @@
+12:07:08.075 INCIDENT no-route {"coins":9,"own":8,"striker":[541,1572],"colourKey":0,"queenRequired":false}
+12:11:43.737 status waiting for the board
+12:12:27.866 LUCKY SHOT striker (835,1508) dir (-0.7816,-0.6238) pull 0.2151 w (86%) speed 1.828 w/s puck (392,1154) target (835,1508) ring 188 planned rest (833,1519) puck off 3 rails
+12:12:29.322 LUCKY AIM initial=NaN° final=NaN° steps=0 dots=0 release=(998,1638)
+12:12:34.017 LUCKY RESULT puck rest not seen
+12:12:50.438 LUCKY SHOT striker (835,1508) dir (-0.8051,-0.5931) pull 0.2247 w (90%) speed 1.910 w/s puck (392,1154) target (835,1508) ring 188 planned rest (834,1514) puck off 3 rails
+12:12:51.900 LUCKY AIM initial=NaN° final=NaN° steps=0 dots=0 release=(1011,1637)
+12:12:56.605 LUCKY RESULT puck rest not seen
+12:13:41.170 LUCKY SHOT striker (835,1508) dir (-0.8051,-0.5931) pull 0.2247 w (90%) speed 1.910 w/s puck (392,1154) target (835,1508) ring 188 planned rest (834,1515) puck off 3 rails
+12:13:42.625 LUCKY AIM initial=NaN° final=NaN° steps=0 dots=0 release=(1011,1637)
+12:13:47.322 LUCKY RESULT puck rest not seen

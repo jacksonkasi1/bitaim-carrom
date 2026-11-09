@@ -1,0 +1,31 @@
+15:08:58.499 status waiting for the board
+15:09:45.922 PC SHOT from (550,1571) to (663,1816) shooting: Pot via cascade (model)
+15:09:48.315 PC AIM initial=-3.37° final=-0.23° steps=2 dots=14
+15:10:12.182 PC SLIDE from (539,2114) to (567,2114) moving striker to ★
+15:10:13.199 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:10:13.375 PC SLIDE from (565,2110) to (569,2110) correcting striker spot (★)
+15:10:14.412 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:10:15.095 PC SHOT from (561,1571) to (388,1777) shooting: 1-coin combination
+15:10:16.296 PC AIM initial=-0.27° final=-0.27° steps=0 dots=14
+15:10:25.233 PC SLIDE from (539,2110) to (844,2110) moving striker to ★
+15:10:26.256 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:10:30.948 PC SHOT from (808,1571) to (645,1664) shooting (time running out): Pot + open cluster (model)
+15:10:32.414 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:10:42.377 PC SLIDE from (539,2110) to (717,2110) moving striker to ★
+15:10:43.405 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:10:46.129 PC SHOT from (698,1571) to (700,1741) shooting: 1-coin combination
+15:10:48.178 PC AIM initial=-1.45° final=-0.28° steps=1 dots=14
+15:10:51.549 PC SLIDE from (536,2110) to (340,2110) moving striker to ★
+15:10:52.591 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:10:54.165 PC SHOT from (372,1571) to (440,1832) shooting: Pot + open paths +2 (model)
+15:10:55.782 PC AIM initial=-2.79° final=0.29° steps=1 dots=15
+15:11:07.636 PC SLIDE from (539,2110) to (318,2110) moving striker to ★
+15:11:08.658 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:11:10.570 PC SHOT from (332,1571) to (173,1726) shooting: Pot + open cluster (model)
+15:11:12.982 PC AIM initial=4.23° final=0.15° steps=2 dots=15
+15:11:19.622 PC SLIDE from (536,2110) to (567,2110) moving striker to ★
+15:11:20.649 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:11:20.762 PC SLIDE from (566,2108) to (570,2108) correcting striker spot (★)
+15:11:21.791 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:11:22.662 PC SHOT from (566,1571) to (805,1696) shooting: Open paths +2 (model)
+15:11:24.505 PC AIM initial=-0.71° final=0.08° steps=1 dots=15

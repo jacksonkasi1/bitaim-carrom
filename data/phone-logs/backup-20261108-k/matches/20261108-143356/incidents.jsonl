@@ -1,0 +1,7 @@
+{"t":1794128675265,"type":"no-route","id":"incident-20261108-143435-no-route","details":{"coins":17,"own":9,"striker":[818,1571],"colourKey":205,"queenRequired":false}}
+{"t":1794128791762,"type":"no-route","id":"incident-20261108-143631-no-route","details":{"coins":12,"own":8,"striker":[642,1572],"colourKey":205,"queenRequired":false}}
+{"t":1794128824085,"type":"no-route","id":"incident-20261108-143704-no-route","details":{"coins":9,"own":5,"striker":[417,1573],"colourKey":205,"queenRequired":false}}
+{"t":1794128875775,"type":"no-route","id":"incident-20261108-143755-no-route","details":{"coins":7,"own":4,"striker":[433,1572],"colourKey":205,"queenRequired":false}}
+{"t":1794128952719,"type":"no-route","id":"incident-20261108-143912-no-route","details":{"coins":4,"own":1,"striker":[819,1575],"colourKey":205,"queenRequired":false}}
+{"t":1794129178905,"type":"no-route","id":"incident-20261108-144258-no-route","details":{"coins":9,"own":5,"striker":[544,1572],"colourKey":205,"queenRequired":false}}
+{"t":1794129195892,"type":"auto-stall","id":"incident-20261108-144315-auto-stall","details":{"status":"board changed, re-planning","turnMs":10130}}
