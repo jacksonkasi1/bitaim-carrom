@@ -9,6 +9,9 @@ public class PowerMeterRegression{static void check(boolean v,String m){if(!v)th
   Scalar shaft=tip<100?new Scalar(0,210,250):new Scalar(0,110,255);
   Imgproc.line(bgr,new Point(sx+ux*20,sy+uy*20),new Point(sx+ux*(tip-10),sy+uy*(tip-10)),shaft,7);
   Imgproc.line(bgr,new Point(sx+ux*20,sy+uy*20),new Point(sx+ux*(tip+150),sy+uy*(tip+150)),new Scalar(255,229,0),2);
+  // 4.13.2: BitAim's own (pale) orange coin path and gold line continuing along the aim past the tip
+  Imgproc.line(bgr,new Point(sx+ux*(tip+4),sy+uy*(tip+4)),new Point(sx+ux*(tip+120),sy+uy*(tip+120)),new Scalar(96,176,255),4);
+  Imgproc.line(bgr,new Point(sx+ux*(tip+2),sy+uy*(tip+2)),new Point(sx+ux*(tip+90),sy+uy*(tip+90)),new Scalar(112,224,255),4);
   float px=-uy,py=ux;
   MatOfPoint head=new MatOfPoint(new Point(sx+ux*tip,sy+uy*tip),new Point(sx+ux*(tip-14)+px*7,sy+uy*(tip-14)+py*7),new Point(sx+ux*(tip-14)-px*7,sy+uy*(tip-14)-py*7));
   Imgproc.fillPoly(bgr,java.util.Arrays.asList(head),new Scalar(20,20,250));
@@ -41,4 +44,4 @@ public class PowerMeterRegression{static void check(boolean v,String m){if(!v)th
   check(PowerMeter.advice(.10f,win).contains("MORE"),"below the window asks for more");
   wall.potSpeedMin=k*.20f;wall.potSpeedMax=k*.20f;check(PowerMeter.zone(.205f,PowerMeter.window(wall,600))==PowerMeter.ZONE_GREEN,"a one-step window keeps the +-8% rule");
   System.out.println("PASS: speed window: whole potting range is green, edges orange, one-step window +-8%");
-  System.out.println("PASS: power arrow measured at 60 (yellow) / 110 / 170 px (orange-red) under BitAim's cyan line (painted circle and off-line red disc ignored), meter zones green/orange/red, full-power cap and advice");}}
+  System.out.println("PASS: power arrow measured at 60 (yellow) / 110 / 170 px (orange-red) under BitAim's cyan, pale-orange and pale-gold lines (painted circle and off-line red disc ignored), meter zones green/orange/red, full-power cap and advice");}}

@@ -84,7 +84,9 @@ public class AimOverlayView extends View {
 
         aimLinePaint      = stroke(Color.parseColor("#00E5FF"), 2.0f);
 
-        coinPathPaint     = stroke(Color.parseColor("#FF8A00"), 1.6f);
+        // 4.13.2: paler orange / gold (saturation under 200): the power-arrow detector reads strongly saturated warm
+        // colours, and these lines along the aim made a 90% pull read 100% (live 23:10:58, 23:29:02).
+        coinPathPaint     = stroke(Color.parseColor("#FFB060"), 1.6f);
 
         // Snap: bright lime dashes from coin to pocket
         snapLinePaint     = stroke(Color.parseColor("#22FF6E"), 1.6f);
@@ -99,7 +101,7 @@ public class AimOverlayView extends View {
         pocketGlowPaint.setShadowLayer(16 * dp, 0, 0, Color.parseColor("#AA22C55E"));
 
         strikerFillPaint  = fill(Color.parseColor("#66FFFFFF"));
-        strikerRingPaint  = stroke(Color.parseColor("#FFD700"), 2.4f);
+        strikerRingPaint  = stroke(Color.parseColor("#FFE070"), 2.4f);
 
         coinOutlinePaint  = stroke(Color.parseColor("#99FFFFFF"), 1.5f);
         blackFillPaint    = fill(Color.parseColor("#AA111111"));
@@ -130,11 +132,11 @@ public class AimOverlayView extends View {
         ghostPaint = stroke(Color.parseColor("#00E5FF"), 1.0f);
         ghostPaint.setPathEffect(new DashPathEffect(new float[]{4*dp, 4*dp}, 0));
         pocketRingPaint = stroke(Color.parseColor("#22FF6E"), 1.8f);
-        goldPaint     = stroke(Color.parseColor("#FFD700"), 1.6f);
-        goldDashPaint = stroke(Color.parseColor("#FFD700"), 1.6f);
+        goldPaint     = stroke(Color.parseColor("#FFE070"), 1.6f);
+        goldDashPaint = stroke(Color.parseColor("#FFE070"), 1.6f);
         goldDashPaint.setPathEffect(new DashPathEffect(new float[]{6*dp, 6*dp}, 0));
         goldTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        goldTextPaint.setColor(Color.parseColor("#FFD700"));
+        goldTextPaint.setColor(Color.parseColor("#FFE070"));
         goldTextPaint.setTextSize(16 * dp);
 
         altStrikerPaint = stroke(Color.parseColor("#9900E5FF"), 1.6f);

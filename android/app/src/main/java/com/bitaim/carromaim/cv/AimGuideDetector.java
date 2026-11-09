@@ -19,12 +19,19 @@ public final class AimGuideDetector {
      *  the striker's edge and runs without long gaps (BitAim's own cyan line may cover its middle, hence the band
      *  across the line and the bridged gaps); a red disc or painted circle further along the line is a separate run. */
     public static float powerArrow(Mat hsv,float sx,float sy,float ux,float uy,float bw,float strikerR){
+        return powerArrow(hsv,sx,sy,ux,uy,bw,strikerR,null);
+    }
+    /** @param board processing-pixel board rectangle {left, top, right, bottom}; the scan stops at its edge (the power
+     *  bar under the board is never read), or null. Lengths over 0.30 board widths are not the game's arrow (it tops out
+     *  near 0.25-0.28): NaN. */
+    public static float powerArrow(Mat hsv,float sx,float sy,float ux,float uy,float bw,float strikerR,float[] board){
         if(Float.isNaN(ux)||Float.isNaN(uy))return Float.NaN;
         float l=(float)Math.hypot(ux,uy);if(l<1e-3f)return Float.NaN;ux/=l;uy/=l;
         float px=-uy,py=ux,band=Math.max(2f,bw*.008f),gapMax=Math.max(5f,bw*.035f);
         int rows=hsv.rows(),cols=hsv.cols();byte[] pix=new byte[3];
         float last=Float.NaN;int steps=0;
         for(float t=strikerR*.8f;t<bw*.40f;t+=1f){
+            if(board!=null){float cx=sx+ux*t,cy=sy+uy*t;if(cx<board[0]||cx>board[2]||cy<board[1]||cy>board[3])break;}
             int hits=0;
             for(float a=-band;a<=band;a+=1f){
                 int x=Math.round(sx+ux*t+px*a),y=Math.round(sy+uy*t+py*a);
@@ -37,7 +44,7 @@ public final class AimGuideDetector {
             else if(t-last>gapMax)break;
         }
         if(Float.isNaN(last)||steps<Math.max(4f,bw*.02f))return Float.NaN;
-        return last/bw;
+        return last/bw>.30f?Float.NaN:last/bw;
     }
     public static float[] detect(Mat hsv,float sx,float sy,float boardWidth,float boardTop){
         Mat mask=new Mat(),hierarchy=new Mat();List<MatOfPoint> contours=new ArrayList<>();

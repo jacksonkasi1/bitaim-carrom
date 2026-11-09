@@ -57,6 +57,9 @@ public final class PowerMeter {
             }
         }
         if(Float.isNaN(bestLo)){r.potSpeedMin=r.potSpeedMax=-1;return;} // computed, no window (keep the single target)
+        // 4.13.2 (live 23:10:58): a combination pulled at ~90% stopped on the pocket lip; each transfer loses more than
+        // the model says, so the soft end of a chain's window starts 10% higher.
+        if(r.chain.size()>1)bestLo=Math.min(bestHi,bestLo*1.1f);
         r.potSpeedMin=bestLo*w;r.potSpeedMax=bestHi*w;
     }
     /** Pull range [low, high] (board widths) of the green zone, or null when the route has no speed window. */

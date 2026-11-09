@@ -272,7 +272,7 @@ public class BoardDetector {
         if(striker!=null){
             float[] guide=AimGuideDetector.detect(hsv,striker[0],striker[1],bw,b.y);
             if(guide!=null){st.aimGuideX=guide[0];st.aimGuideY=guide[1];st.aimGuideDots=(int)guide[2];
-                st.aimPower=AimGuideDetector.powerArrow(hsv,striker[0],striker[1],guide[0],guide[1],bw,striker[2]);}
+                st.aimPower=AimGuideDetector.powerArrow(hsv,striker[0],striker[1],guide[0],guide[1],bw,striker[2],new float[]{b.x-bw*.04f,b.y-bw*.04f,b.x+b.width+bw*.04f,b.y+b.height+bw*.04f});}
         }
         st.teamKnown = targetColourKey!=TargetColourLock.AUTO||effectiveAllColours||teams.known;
         st.targetColourKey=targetColourKey;
