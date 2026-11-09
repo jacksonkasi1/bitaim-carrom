@@ -268,10 +268,11 @@ public final class LuckyShot {
                 PointF t=mirror(sc.target,pw,b,rp);
                 float nx=t.x-sc.puck.x,ny=t.y-sc.puck.y,nl=(float)Math.hypot(nx,ny);if(nl<1)continue;nx/=nl;ny/=nl;
                 PointF ghost=new PointF(sc.puck.x-nx*(rs+rp),sc.puck.y-ny*(rs+rp));
-                for(int sw=-1;sw<3;sw++){ // striker: direct, off the left, right or top rail
+                for(int sw=-1;sw<4;sw++){ // striker: direct, or off the left, right, top or bottom rail
                     PointF gm=mirror(ghost,sw,b,rs);
                     float ux=gm.x-x,uy=gm.y-sc.baseY,ul=(float)Math.hypot(ux,uy);if(ul<1)continue;ux/=ul;uy/=ul;
-                    if(uy>-.05f)continue;
+                    // 4.12.3 (user: puck in the bottom-left corner not handled): backward shots (toward the bottom rail) are
+                    // allowed; the striker can be aimed in any direction.
                     Cand best=null;
                     for(float v=minSpeed;v<=maxSpeed;v+=w*.05f){
                         float e=rest(g,sc,ux,uy,v,null);
@@ -284,7 +285,7 @@ public final class LuckyShot {
         if(fixed&&!xs.isEmpty()){
             // The striker cannot be placed: also sweep every upward direction (multi-rail routes the geometry misses).
             GameState g=model(sc,fixedX);
-            for(float deg=-172;deg<=-8;deg+=.75f){
+            for(float deg=-180;deg<180;deg+=.75f){
                 if(Thread.currentThread().isInterrupted())return null;
                 float ux=(float)Math.cos(Math.toRadians(deg)),uy=(float)Math.sin(Math.toRadians(deg));
                 Cand best=null;
