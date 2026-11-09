@@ -20,7 +20,7 @@ public final class OpeningPlanner {
     private static final float[] FULL_SPEEDS={1.6f,1.9f,2.3f},QUICK_SPEEDS={2.2f}; // 4.8.6: speeds = 8.5 x pull, pull 0.19-0.27
     private static final float[] SAMPLE_X={.25f,.375f,.5f,.625f,.75f};
     /** Wall-clock cap for the full search; desktop tests may raise it with -Dbitaim.openerBudgetMs. */
-    static long BUDGET_NANOS=Long.getLong("bitaim.openerBudgetMs",1200L)*1_000_000L;
+    static volatile long BUDGET_NANOS=Long.getLong("bitaim.openerBudgetMs",1200L)*1_000_000L;
     private OpeningPlanner(){}
 
     /** Number of (own coin, pocket) pairs with a clear direct path from at least one baseline sample now. */

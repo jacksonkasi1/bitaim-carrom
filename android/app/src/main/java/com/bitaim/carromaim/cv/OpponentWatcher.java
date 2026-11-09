@@ -24,8 +24,10 @@ public final class OpponentWatcher {
     public OpponentWatcher(ShotLogger.Sink sink){this.sink=sink;}
     public int written(){return written;}
     /** True while another player's shot is moving: the capture service then detects every frame. */
-    public synchronized boolean tracking(){return shotAt>=0&&frames<MAX_FRAMES;}
+    private long lastFeedAt=-1;
+    public synchronized boolean tracking(){return shotAt>=0&&frames<MAX_FRAMES&&(lastFeedAt<0||lastFeedAt-shotAt<=TRACK_MS);}
     public synchronized void feed(GameState s,long now){
+        lastFeedAt=now;
         if(s==null||s.board==null||s.strikerDetected){ // local turn or no board: nothing to watch
             if(s!=null&&s.strikerDetected){settled=null;last=null;shotAt=-1;track=null;localAt=now;}
             return;

@@ -1,0 +1,60 @@
+19:26:58.318 status waiting for a steady board (0/4)
+19:26:58.641 status waiting for a steady board (1/4)
+19:26:58.840 status waiting for a steady board (2/4)
+19:26:59.088 status waiting for a steady board (3/4)
+19:26:59.342 status re-planning on the settled board
+19:26:59.720 status waiting for a steady board (0/4)
+19:26:59.885 status waiting for a steady board (1/4)
+19:27:00.104 status waiting for a steady board (2/4)
+19:27:00.334 status waiting for a steady board (3/4)
+19:27:00.516 status no route from here (4 s to relaxed mode)
+19:27:00.750 status board changed, re-planning (4 s to relaxed mode)
+19:27:01.130 status waiting for your turn
+19:27:03.638 status waiting for a steady board (0/4)
+19:27:03.770 status waiting for a steady board (1/4)
+19:27:03.937 status waiting for a steady board (2/4)
+19:27:04.105 status waiting for a steady board (3/4)
+19:27:04.336 status moving striker to ★
+19:27:04.341 SLIDE from (542,2107) to (510,2107) moving striker to ★
+19:27:05.468 status correcting striker spot (★)
+19:27:05.472 SLIDE_LANDED start=542.3 target=494.7 finger=-32.6 landed=515.7 off=21.1
+19:27:05.475 SLIDE from (516,2111) to (510,2111) correcting striker spot (★)
+19:27:06.593 status waiting for a steady board (0/4)
+19:27:06.596 SLIDE_LANDED start=515.7 target=494.7 finger=-6.1 landed=508.3 off=13.7
+19:27:06.767 status waiting for your turn
+19:27:07.141 status waiting for a steady board (1/4)
+19:27:07.506 status waiting for your turn
+19:27:08.852 status waiting for a steady board (0/4)
+19:27:09.149 status waiting for a steady board (1/4)
+19:27:09.300 status waiting for a steady board (2/4)
+19:27:09.465 status waiting for a steady board (3/4)
+19:27:09.665 status shooting: Pot + open paths +1 (model)
+19:27:09.671 SHOT from (506,1573) to (435,1818) shooting: Pot + open paths +1 (model)
+19:27:11.136 AIM initial=NaN° final=NaN° steps=0 dots=0 release=(435,1818)
+19:27:11.142 status shot sent, waiting for the board to settle
+19:27:11.608 status waiting for the board
+19:27:12.090 status waiting after last action
+19:27:12.258 status waiting for a steady board (0/4)
+19:27:12.520 status waiting for a steady board (1/4)
+19:27:12.775 status waiting for a steady board (2/4)
+19:27:12.952 status waiting for a steady board (3/4)
+19:27:13.102 status board changed, re-planning (5 s to relaxed mode)
+19:27:13.696 status finding the best striker spot (★)
+19:27:13.833 status waiting for a steady board (0/4)
+19:27:14.796 status waiting for the board
+19:27:15.658 status waiting for a steady board (0/4)
+19:27:15.808 status waiting for a steady board (1/4)
+19:27:15.974 status waiting for a steady board (2/4)
+19:27:16.140 status waiting for a steady board (3/4)
+19:27:16.322 status finding the best striker spot (★)
+19:27:16.472 status board changed, re-planning (6 s to relaxed mode)
+19:27:16.771 status board changed, re-planning (5 s to relaxed mode)
+19:27:17.684 status board changed, re-planning (4 s to relaxed mode)
+19:27:17.850 status re-planning on the settled board
+19:27:18.215 status shooting: Open paths +2 (model)
+19:27:18.218 SHOT from (514,1573) to (564,1790) shooting: Open paths +2 (model)
+19:27:19.647 AIM initial=NaN° final=NaN° steps=0 dots=0 release=(564,1790)
+19:27:19.661 status shot sent, waiting for the board to settle
+19:27:28.593 status waiting for your turn
+19:27:31.100 status waiting for the board
+19:27:33.557 status waiting for your turn

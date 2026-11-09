@@ -117,6 +117,16 @@ public class AutoPlayRegression {
   check(Math.abs(AimCorrection.nextGain(-1.52f,-.90f,1f)-1/(.62f/1.52f))<.01f||AimCorrection.nextGain(-1.52f,-.90f,1f)==2f,"Under-response scales the next step up");
   check(AimCorrection.nextGain(-1.5f,-.75f,1f)==2f&&AimCorrection.nextGain(-1f,0f,1f)==1f,"Half response doubles the step; full response keeps it");
   check(AimCorrection.nextGain(-1f,-1.1f,1f)==1f&&AimCorrection.nextGain(Float.NaN,-1f,1f)==1f,"Noise or first step: plain step");
+  {// 4.13.3: a route whose plan never matches the settled board ("board changed, re-planning" all turn) must not
+   // lose the turn: after 8 s the fallback shot is played (overnight practice 01:11-01:14).
+   GameState g=RouteRegression.state(500,850);RouteRegression.add(g,300,400,true);
+   ShotPlanner.Shot sr=RoutePlanner.best(g);check(sr!=null,"Fixture requires model route");
+   sr.worldSignature^=1;sr.chancePercent=90;
+   AutoPlayController ch=new AutoPlayController();ch.setEnabled(true);ch.setGoldReady(true);
+   AutoPlayController.Action early=null;for(int i=0;i<60&&early==null;i++){g.frameId++;early=ch.update(g,sr,Float.NaN,100000+i*100);}
+   check(early==null&&ch.status().startsWith("board changed"),"Early in the turn a changed board waits ("+ch.status()+")");
+   AutoPlayController.Action fb=null;for(int i=0;i<40&&fb==null;i++){g.frameId++;fb=ch.update(g,sr,Float.NaN,106100+i*100);}
+   check(fb!=null&&!fb.move,"A board that never settles gets the fallback shot after 8 s ("+ch.status()+")");}
   System.out.println("PASS: opt-in only, stable frames, pull geometry, one shot per turn, robustness gate, stale-plan rejection, slider verification, opponent-turn block, cancellation, stable gold scene, closed-loop aim correction");
  }
 }

@@ -1,0 +1,11 @@
+18:05:35.487 status waiting for a steady board (0/4)
+18:05:35.619 status waiting for a steady board (1/4)
+18:05:35.856 status waiting for a steady board (2/4)
+18:05:36.068 status waiting for a steady board (3/4)
+18:05:36.261 status no route from here (6 s to relaxed mode)
+18:05:36.633 status no route from here (5 s to relaxed mode)
+18:05:36.869 status finding the best striker spot (★)
+18:05:38.609 status board changed, re-planning (3 s to relaxed mode)
+18:05:39.606 status board changed, re-planning (2 s to relaxed mode)
+18:05:40.136 status moving striker to ★
+18:05:40.140 SLIDE from (536,2110) to (509,2110) moving striker to ★

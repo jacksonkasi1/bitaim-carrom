@@ -43,6 +43,9 @@ public final class PhysicsVerifier {
             route.robustnessTrials=STRESS.length;route.robustnessPassed=potPasses;route.productiveStressPassed=productivePasses;
         }
     }
+    /** 4.12.0 speed level (SpeedProfile): try every power (true) or stop at the first valid one; how many powers get
+     *  the 9-trial stress test (2, or 1 on the faster levels). */
+    public static volatile boolean SPEED_BEAM=true;public static volatile int STRESS_CANDIDATES=2;
     public static boolean validate(GameState state,ShotPlanner.Shot route){
         if(route.kind==5||route.sweep)return route.modelValidated&&route.worldSignature==signature(state); // OpeningPlanner and SweepPlanner validate their own shots
         route.modelValidated=false;
@@ -51,7 +54,7 @@ public final class PhysicsVerifier {
         long signature=signature(state);
         // 4.9.8 (user: "hit the easy coin hard so the striker breaks the cluster"): every power is tried, not only in
         // close-pair scenes. Logged geometric "Pot + open cluster" shots potted 7/9 against ~65% for plain pots.
-        boolean speedBeam=true;int pathsNow=OpeningPlanner.pathsNow(state);
+        boolean speedBeam=SPEED_BEAM;int pathsNow=OpeningPlanner.pathsNow(state);
         List<SpeedCandidate> candidates=new ArrayList<>();
         // Complex scene: three nominal solves, then at most two nine-trial sets.
         // Isolated scenes retain the first-valid-speed fast path (at most 12 solves).
@@ -81,7 +84,7 @@ public final class PhysicsVerifier {
         SpeedCandidate best=null;
         // The softest valid power always stays in the stress test, so a fragile hard pot never beats a safe soft one.
         if(candidates.size()>2){SpeedCandidate soft=candidates.get(0);for(SpeedCandidate c:candidates)if(c.speed<soft.speed)soft=c;candidates.remove(soft);candidates.add(1,soft);}
-        for(int i=0;i<Math.min(2,candidates.size());i++){
+        for(int i=0;i<Math.min(Math.max(1,STRESS_CANDIDATES),candidates.size());i++){
             SpeedCandidate candidate=candidates.get(i);
             for(double[] sample:STRESS){
                 if(Thread.currentThread().isInterrupted())return false;
@@ -206,6 +209,11 @@ public final class PhysicsVerifier {
      *  striker on a straight hit; FOLLOW_MASS is the pessimistic check for follow-through scratches (1.6: 2.2 rejected ordinary straight pots near a pocket). */
     public static volatile double FOLLOW_MASS=1.6;
     public static Outcome run(GameState s,double ux,double uy,float speed,double wall,int intendedFirst,double friction,double captureFrac,double coulomb,double strikerMass){
+        return run(s,ux,uy,speed,wall,intendedFirst,friction,captureFrac,coulomb,strikerMass,null);
+    }
+    /** 4.11.0: optional trace of the motion, {body, x, y, kind (1 contact, 3/4 rail), other body} at every contact and rail hit (body 0 = striker, i+1 = coin i),
+     *  used to draw the real modelled paths (Lucky Shot). */
+    public static Outcome run(GameState s,double ux,double uy,float speed,double wall,int intendedFirst,double friction,double captureFrac,double coulomb,double strikerMass,List<double[]> trace){
         Outcome out=new Outcome();
         List<Body> bodies=new ArrayList<>();Body striker=body(s.striker,strikerMass);bodies.add(striker);
         for(Coin c:s.coins){Body b=body(c,1);b.own=c.targetEligible;bodies.add(b);}
@@ -267,12 +275,13 @@ public final class PhysicsVerifier {
                     first=true;out.firstContact=(next.a==0?next.b:next.a)-1;
                     if(intendedFirst>=0&&out.firstContact!=intendedFirst){out.aborted=true;break;}
                 }
+                if(trace!=null){Body o=bodies.get(next.b);trace.add(new double[]{next.a,a.x,a.y,1,next.b});trace.add(new double[]{next.b,o.x,o.y,1,next.a});}
                 impulse(a,bodies.get(next.b));
             }else if(next.kind==2){
                 a.active=false;a.pocket=next.b;a.vx=a.vy=0;
                 if(next.a==0||!a.own||blockedPocket[next.b]){out.aborted=true;break;} // reject nominal scratches/opponent pots
-            }else if(next.kind==3){a.vx*=-wall;if(next.a==0)a.vy*=STRIKER_RAIL_TANGENT;}
-            else{a.vy*=-wall;if(next.a==0)a.vx*=STRIKER_RAIL_TANGENT;}
+            }else if(next.kind==3){if(trace!=null)trace.add(new double[]{next.a,a.x,a.y,3,-1});a.vx*=-wall;if(next.a==0)a.vy*=STRIKER_RAIL_TANGENT;}
+            else{if(trace!=null)trace.add(new double[]{next.a,a.x,a.y,4,-1});a.vy*=-wall;if(next.a==0)a.vx*=STRIKER_RAIL_TANGENT;}
         }
         int n=s.coins.size();out.x=new double[n];out.y=new double[n];out.active=new boolean[n];out.pocket=new int[n];
         for(int i=0;i<n;i++){Body b=bodies.get(i+1);out.x[i]=b.x;out.y[i]=b.y;out.active[i]=b.active;out.pocket[i]=b.pocket;}

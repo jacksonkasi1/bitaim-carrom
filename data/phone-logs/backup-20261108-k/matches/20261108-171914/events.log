@@ -1,0 +1,53 @@
+17:21:09.687 INCIDENT no-route {"coins":13,"own":6,"striker":[260,1573],"colourKey":205,"queenRequired":false}
+17:37:52.335 INCIDENT auto-stall {"status":"starting","turnMs":12797}
+17:37:52.338 status waiting for a steady board (0/4)
+17:37:52.370 status waiting for a steady board (1/4)
+17:37:52.672 status waiting for a steady board (2/4)
+17:37:52.838 status waiting for a steady board (3/4)
+17:37:53.021 status moving striker to ★
+17:37:53.024 SLIDE from (553,2105) to (359,2105) moving striker to ★
+17:37:54.133 status waiting for a steady board (0/4)
+17:37:54.136 SLIDE_LANDED start=552.9 target=393.8 finger=-194.0 landed=405.4 off=11.7
+17:37:54.450 status waiting for a steady board (1/4)
+17:37:54.632 status waiting for a steady board (2/4)
+17:37:54.781 status waiting for a steady board (3/4)
+17:37:54.930 status no route from here (4 s to relaxed mode)
+17:37:55.412 status route no longer pots on this board, re-planning
+17:37:55.561 status no route from here (3 s to relaxed mode)
+17:37:56.492 status no route from here (2 s to relaxed mode)
+17:37:57.409 status no route from here (1 s to relaxed mode)
+17:37:57.586 status shooting: Direct route
+17:37:57.590 SHOT from (359,1572) to (233,1799) shooting: Direct route
+17:37:59.436 AIM initial=1.05° final=0.18° steps=1 dots=15 release=(237,1801)
+17:37:59.446 status shot sent, waiting for the board to settle
+17:37:59.850 status waiting for your turn
+17:38:02.754 status waiting for a steady board (0/4)
+17:38:03.099 status waiting for a steady board (1/4)
+17:38:03.265 status waiting for a steady board (2/4)
+17:38:03.414 status waiting for a steady board (3/4)
+17:38:03.597 status moving striker to ★
+17:38:03.601 SLIDE from (540,2105) to (240,2105) moving striker to ★
+17:38:04.677 status moving striker
+17:38:04.843 status correcting striker spot (★)
+17:38:04.847 SLIDE_LANDED start=539.7 target=293.8 finger=-299.9 landed=271.5 off=-22.3
+17:38:04.851 SLIDE from (272,2110) to (279,2110) correcting striker spot (★)
+17:39:47.784 INCIDENT no-route {"coins":2,"own":1,"striker":[432,1574],"colourKey":205,"queenRequired":false}
+17:43:28.211 status waiting for a steady board (0/4)
+17:43:28.345 status waiting for a steady board (1/4)
+17:43:28.594 status waiting for a steady board (2/4)
+17:43:28.743 status waiting for a steady board (3/4)
+17:43:28.942 status moving striker to ★
+17:43:28.945 SLIDE from (538,2095) to (423,2095) moving striker to ★
+17:43:29.989 status waiting for a steady board (0/4)
+17:43:29.993 SLIDE_LANDED start=537.9 target=443.8 finger=-114.8 landed=455.1 off=11.3
+17:43:30.355 status waiting for a steady board (1/4)
+17:43:30.503 status waiting for a steady board (2/4)
+17:43:30.671 status waiting for a steady board (3/4)
+17:43:30.819 status no route from here (4 s to relaxed mode)
+17:43:30.989 INCIDENT auto-stall {"status":"no route from here (4 s to relaxed mode)","turnMs":10081}
+17:43:31.085 status shooting: Direct route
+17:43:31.088 SHOT from (444,1574) to (419,1736) shooting: Direct route
+17:43:33.056 AIM initial=-5.34° final=0.18° steps=1 dots=11 release=(404,1733)
+17:43:33.078 status shot sent, waiting for the board to settle
+17:43:33.724 status waiting for your turn
+18:02:39.996 status waiting for the board

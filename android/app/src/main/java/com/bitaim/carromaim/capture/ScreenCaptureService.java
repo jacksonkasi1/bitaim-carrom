@@ -69,6 +69,10 @@ public class ScreenCaptureService extends Service {
     private HandlerThread   workerThread;
     private Handler         workerHandler;
     private final BoardDetector detector = new BoardDetector();
+    private boolean loggedCovered, coveredFrame;
+    /** 4.11.2: motion tracks at most 20 fps (was every frame, up to 60 fps, while the phone was already overloaded). */
+    private static final long TRACK_INTERVAL_MS = 50;
+    private final com.bitaim.carromaim.cv.LuckyShot.Planner luckyPlanner = new com.bitaim.carromaim.cv.LuckyShot.Planner();
     /** Local-only calibration log: one JSON line per real shot in this app's own files folder. */
     private final com.bitaim.carromaim.cv.ShotLogger shotLogger = new com.bitaim.carromaim.cv.ShotLogger(this::appendShotLine);
     private final com.bitaim.carromaim.cv.OpponentWatcher opponentWatcher = new com.bitaim.carromaim.cv.OpponentWatcher(this::appendShotLine);
@@ -291,8 +295,8 @@ public class ScreenCaptureService extends Service {
             boolean pc = PcLink.connected();
             long interval = !inGame ? OUT_OF_GAME_INTERVAL_MS
                     : pc ? PC_FRAME_INTERVAL_MS
-                    : (shotLogger.tracking() || opponentWatcher.tracking()) && debugOn ? 0
-                    : lastLocalTurn ? FRAME_INTERVAL_MS
+                    : (shotLogger.tracking() || opponentWatcher.tracking()) && debugOn ? TRACK_INTERVAL_MS
+                    : lastLocalTurn ? com.bitaim.carromaim.cv.SpeedProfile.frameIntervalMs() // 4.12.0: user frame rate
                     : lastBoardSeen ? (debugOn ? FRAME_INTERVAL_MS : IDLE_INTERVAL_MS) // debug: catch the start of other players' shots
                     : NO_BOARD_INTERVAL_MS;
             if (now - lastFrameMs < interval) return;
@@ -327,8 +331,10 @@ public class ScreenCaptureService extends Service {
             }
 
             GameState state=null;
+            com.bitaim.carromaim.cv.LuckyShot.Scene lucky=null;
             if(com.bitaim.carromaim.overlay.GameGestureService.gameInFront())synchronized(detector){
                 state=detector.detect(bmp);
+                if(state==null)lucky=detector.lucky();
                 if(state!=null&&state.assignedColours){
                     detector.setAllColours(false);
                     android.content.SharedPreferences preferences=getSharedPreferences("bitaim_game_mode",Context.MODE_PRIVATE);
@@ -339,15 +345,26 @@ public class ScreenCaptureService extends Service {
                     }
                 }
             }
+            // 4.11.0: a covered board (chat panel over it, live 19:28-19:30) is treated as no board for recording and
+            // planning: the half-hidden discs gave a false "8 potted" result and a debug picture showed the chat.
+            if (state != null && state.covered) { if (debugOn && !loggedCovered) { loggedCovered = true; Log.i(TAG, "board covered, not recording"); } state = null; coveredFrame = true; }
+            else { loggedCovered = false; coveredFrame = false; }
             lastBoardSeen = state != null;
             recordingLive = debugOn && state != null;
-            if (debugOn) MatchFolder.observe(state == null ? -1 : state.coins.size(), state != null && state.openingCluster, now);
+            if (debugOn && !coveredFrame) MatchFolder.observe(state == null ? -1 : state.coins.size(), state != null && state.openingCluster, now);
             lastLocalTurn = state != null && state.strikerDetected;
             if (!running) return;
             // Scale captured-coords → real screen-coords
             float sx = screenWidth  / (float) w;
             float sy = screenHeight / (float) h;
             scaleState(state, sx, sy);
+            // 4.11.0: Lucky Shot mini-game: own overlay (target, striker spot, line, pull point); the carrom pipeline
+            // (shot log, auto play) sees no board.
+            com.bitaim.carromaim.cv.LuckyShot.Plan luckyPlan=null;
+            if(lucky!=null){lucky.scale(sx,sy);luckyPlan=luckyPlanner.offer(lucky);}
+            else luckyPlanner.reset();
+            FloatingOverlayService luckyOverlay=FloatingOverlayService.INSTANCE;
+            if(luckyOverlay!=null)luckyOverlay.onLuckyShot(lucky,luckyPlan,lucky!=null&&luckyPlanner.busy());
             try { shotLogger.feed(state, now); } catch (Throwable t) { Log.w(TAG, "Shot log: " + t.getMessage()); }
             if (DebugMode.enabled(this)) try { opponentWatcher.feed(state, now); } catch (Throwable t) { Log.w(TAG, "Opponent log: " + t.getMessage()); }
             if (debugOn) {

@@ -24,7 +24,10 @@ public final class ShotLogger {
      *  and rail loss needs positions over time; start and settled pictures cannot separate power from drag. */
     public static final long TRACK_MS=4000;private StringBuilder track;private int trackFrames;private long trackAt=-1;
     /** True while an auto shot is being tracked: the capture service then detects every frame it can. */
-    public synchronized boolean tracking(){return track!=null&&trackAt>=0&&trackFrames<160;}
+    /** 4.11.2: only inside the TRACK_MS window (an unreleased auto marker kept "tracking" and so full-rate detection
+     *  on). */
+    private long lastFeedAt=-1;
+    public synchronized boolean tracking(){return track!=null&&trackAt>=0&&trackFrames<160&&(lastFeedAt<0||lastFeedAt-trackAt<=TRACK_MS);}
     private float targetX=Float.NaN,targetY,pocketX,pocketY;
     /** Current on-screen suggestion (launch direction, target, pocket, label), refreshed by the overlay. */
     private volatile float[] suggestion;private volatile String suggestionLabel;
@@ -76,6 +79,7 @@ public final class ShotLogger {
         autoPull=pull;autoUx=ux;autoUy=uy;autoInfo=info;autoShotAt=-1;motionIndex=0;
     }
     public synchronized void feed(GameState s,long now){
+        lastFeedAt=now;
         if(shotId!=null&&autoShotAt<0){autoShotAt=now;track=new StringBuilder("[");trackFrames=0;trackAt=now;}
         // 4.10.9: hand-played shots are tracked too (from the release), so the result can follow moved coins and
         // tell a potted coin from one knocked across the board, and find the resting striker.
@@ -100,7 +104,13 @@ public final class ShotLogger {
             cleanCandidate=copy(s);
         }
         if(!waiting){
+            // 4.11.0 (live 19:27:18): an auto shot that is never seen leaving the baseline must not stay pending: 163 s
+            // later the player's own shot was written under the stale auto route. Drop the auto marker after GIVE_UP_MS.
+            if(shotId!=null&&autoShotAt>=0&&now-autoShotAt>GIVE_UP_MS){reset();aimed=null;}
             if(s.strikerDetected&&s.aimGuideDots>=6&&!Float.isNaN(s.aimGuideX)){aimed=copy(s);aimedAt=now;lastWasAimed=true;aimedSuggestion=suggestion;aimedSuggestionLabel=suggestionLabel;return;}
+            // An auto shot is held by BitAim itself: its release is the striker leaving the baseline, even when the game's
+            // aim dots were not read during the hold (that shot: "dots 0", so no aimed board and no record at all).
+            if(shotId!=null&&s.strikerDetected&&(aimed==null||now-aimedAt>200)){aimed=copy(s);aimedAt=now;return;}
             if(aimed==null)return;
             if(now-aimedAt>RELEASE_WINDOW_MS){aimed=null;autoPull=Float.NaN;return;} // aim dropped without a shot
             boolean released=!s.strikerDetected||Math.hypot(s.striker.pos.x-aimed.striker.pos.x,s.striker.pos.y-aimed.striker.pos.y)>aimed.striker.radius;
@@ -142,6 +152,7 @@ public final class ShotLogger {
         b.append(String.format(Locale.US,"{\"t\":%d,\"board\":[%.1f,%.1f,%.1f,%.1f],\"striker\":[%.1f,%.1f,%.1f],\"aim\":[%.4f,%.4f],\"dots\":%d,\"autoPull\":%s,\"autoAim\":%s,\"key\":%d,",
                 now,before.board.left,before.board.top,before.board.width(),before.board.height(),before.striker.pos.x,before.striker.pos.y,before.striker.radius,
                 AimGuideDetector.shotDirection(before.aimGuideX,before.aimGuideY)[0],AimGuideDetector.shotDirection(before.aimGuideX,before.aimGuideY)[1],before.aimGuideDots,Float.isNaN(autoPull)?"null":String.format(Locale.US,"%.4f",autoPull),Float.isNaN(autoUx)?"null":String.format(Locale.US,"[%.4f,%.4f]",autoUx,autoUy),before.targetColourKey));
+        if(!Float.isNaN(before.aimPower))b.append(String.format(Locale.US,"\"arrow\":%.4f,",before.aimPower)); // 4.13.0: red power arrow, board widths
         b.append("\"pockets\":[");for(int i=0;i<before.pockets.size();i++){if(i>0)b.append(',');b.append(String.format(Locale.US,"[%.1f,%.1f]",before.pockets.get(i).x,before.pockets.get(i).y));}b.append("],");
         b.append("\"before\":");discs(b,before);b.append(",\"after\":");discs(b,after);
         if(shotId!=null){
@@ -223,7 +234,7 @@ public final class ShotLogger {
     }
     static GameState copy(GameState s){
         GameState c=new GameState();
-        c.frameId=s.frameId;c.targetColourKey=s.targetColourKey;c.aimGuideX=s.aimGuideX;c.aimGuideY=s.aimGuideY;c.aimGuideDots=s.aimGuideDots;
+        c.frameId=s.frameId;c.targetColourKey=s.targetColourKey;c.aimGuideX=s.aimGuideX;c.aimGuideY=s.aimGuideY;c.aimGuideDots=s.aimGuideDots;c.aimPower=s.aimPower;
         c.board=new android.graphics.RectF(s.board.left,s.board.top,s.board.right,s.board.bottom);
         if(s.striker!=null)c.striker=new Coin(s.striker.pos.x,s.striker.pos.y,s.striker.radius,Coin.COLOR_STRIKER,true);
         c.strikerDetected=s.strikerDetected;c.teamKnown=s.teamKnown;c.freestyle=s.freestyle;c.queenRequired=s.queenRequired;c.sliderY=s.sliderY;
@@ -274,7 +285,9 @@ public final class ShotLogger {
                     boolean heading=false;
                     if(!Double.isNaN(vx)&&Math.hypot(vx,vy)>w*.3)for(android.graphics.PointF p:before.pockets)
                         if(Math.hypot(p.x-x,p.y-y)<w*.12&&((p.x-x)*vx+(p.y-y)*vy)>0)heading=true;
-                    striker=heading?"pocketed":"gone";
+                    // 4.12.1: at the phone's ~6 fps the follow loses a fast striker; 4 of 5 "gone" shots (23:17-23:33)
+                    // were clean pots with the striker resting on the board. Say so instead of implying a foul.
+                    striker=heading?"pocketed":"lost";
                 }
             }
         }

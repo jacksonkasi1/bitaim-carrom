@@ -201,6 +201,9 @@ public class FloatingOverlayService extends Service {
         super.onCreate();
         INSTANCE = this;
         com.bitaim.carromaim.cv.RoutePlanner.proStyle=getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).getBoolean("proStyle",false);
+        // 4.12.0: speed level and frame rate chosen by the player (defaults: Fast, 10 fps).
+        com.bitaim.carromaim.cv.SpeedProfile.setLevel(getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).getInt("speedLevel",com.bitaim.carromaim.cv.SpeedProfile.DEFAULT_LEVEL));
+        com.bitaim.carromaim.cv.SpeedProfile.setFps(getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).getInt("speedFps",com.bitaim.carromaim.cv.SpeedProfile.DEFAULT_FPS));
         createNotificationChannel();
         try {
             // Android 14+ (targetSdk 34) requires the service type here as well as
@@ -356,6 +359,8 @@ public class FloatingOverlayService extends Service {
         boolean pcOn=com.bitaim.carromaim.capture.PcLink.enabled();
         menu.add(2,7,keys.size()+4,pcOn?(com.bitaim.carromaim.capture.PcLink.connected()?"PC brain: ON (connected)":"PC brain: ON (waiting for PC)"):"PC brain (USB): OFF").setCheckable(true).setChecked(pcOn);
         menu.add(0,5,0,autoWasOn?"■ Stop auto play":"▶ Auto play (drags and shoots)");
+        menu.add(2,8,keys.size()+5,"⚡ Speed: "+com.bitaim.carromaim.cv.SpeedProfile.SHORT[com.bitaim.carromaim.cv.SpeedProfile.level()]+" ▸");
+        menu.add(2,9,keys.size()+6,"Frame rate: "+com.bitaim.carromaim.cv.SpeedProfile.fps()+" fps ▸");
         menu.add(0,3,keys.size()+2,"Next route").setEnabled(latestState!=null&&latestState.strikerDetected);
         colourMenu.setOnMenuItemClickListener(item->{
             int id=item.getItemId();
@@ -374,6 +379,8 @@ public class FloatingOverlayService extends Service {
                 com.bitaim.carromaim.capture.PcLink.setEnabled(on);updateColourLockLabel();
                 android.widget.Toast.makeText(this,on?"PC brain ON: plans on the PC over USB when the PC program runs (phone brain until then)":"PC brain OFF: the phone plans by itself",android.widget.Toast.LENGTH_SHORT).show();
             }
+            else if(id==8)showSpeedMenu();
+            else if(id==9)showFpsMenu();
             else if(id==6){
                 boolean on=!com.bitaim.carromaim.capture.DebugMode.enabled(this);
                 com.bitaim.carromaim.capture.DebugMode.set(this,on);updateColourLockLabel();
@@ -401,6 +408,42 @@ public class FloatingOverlayService extends Service {
             Log.w("BitAim/Overlay","Could not open colour menu",e);
             android.widget.Toast.makeText(this,"Colour chooser unavailable — reopen the overlay",android.widget.Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /** 4.12.0: speed level chooser (planning depth vs speed). */
+    private void showSpeedMenu(){
+        if(floatingBtnView==null)return;
+        PopupMenu m=new PopupMenu(new ContextThemeWrapper(this,android.R.style.Theme_Material_Light),floatingBtnView);
+        int cur=com.bitaim.carromaim.cv.SpeedProfile.level();
+        for(int i=0;i<com.bitaim.carromaim.cv.SpeedProfile.NAMES.length;i++)m.getMenu().add(1,i,i,com.bitaim.carromaim.cv.SpeedProfile.NAMES[i]).setCheckable(true).setChecked(i==cur);
+        m.getMenu().setGroupCheckable(1,true,true);
+        m.setOnMenuItemClickListener(item->{
+            int l=item.getItemId();
+            com.bitaim.carromaim.cv.SpeedProfile.setLevel(l);
+            getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).edit().putInt("speedLevel",l).apply();
+            onDetectedState(null); // re-plan with the new level
+            String[] what={"Deep: full search every time (slowest)","Fast: quick line first, full Pro search after (default)","Ultra: quick search only, lighter ★ search","Max: fastest, least searching (fewer odd routes)"};
+            android.widget.Toast.makeText(this,"⚡ "+what[l],android.widget.Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        try{m.show();}catch(android.view.WindowManager.BadTokenException e){Log.w("BitAim/Overlay","Could not open speed menu",e);}
+    }
+    /** 4.12.0: frame rate on the player's turn. */
+    private void showFpsMenu(){
+        if(floatingBtnView==null)return;
+        PopupMenu m=new PopupMenu(new ContextThemeWrapper(this,android.R.style.Theme_Material_Light),floatingBtnView);
+        int cur=com.bitaim.carromaim.cv.SpeedProfile.fps();
+        int[] fps=com.bitaim.carromaim.cv.SpeedProfile.FPS;
+        for(int i=0;i<fps.length;i++)m.getMenu().add(1,fps[i],i,fps[i]+" fps"+(fps[i]==com.bitaim.carromaim.cv.SpeedProfile.DEFAULT_FPS?" (default)":fps[i]>=20?" (more CPU)":"")).setCheckable(true).setChecked(fps[i]==cur);
+        m.getMenu().setGroupCheckable(1,true,true);
+        m.setOnMenuItemClickListener(item->{
+            int f=item.getItemId();
+            com.bitaim.carromaim.cv.SpeedProfile.setFps(f);
+            getSharedPreferences("bitaim_game_mode",MODE_PRIVATE).edit().putInt("speedFps",f).apply();
+            android.widget.Toast.makeText(this,"Frame rate "+f+" fps on your turn",android.widget.Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        try{m.show();}catch(android.view.WindowManager.BadTokenException e){Log.w("BitAim/Overlay","Could not open frame rate menu",e);}
     }
 
     /** Second step before auto play starts: an explicit Yes / No next to the star. */
@@ -652,8 +695,38 @@ public class FloatingOverlayService extends Service {
         @Override public long guideAt(){return latestGuideAt;}
     };
     private final com.bitaim.carromaim.cv.StrikerBaseline strikerBaseline=new com.bitaim.carromaim.cv.StrikerBaseline();
+    /** 4.11.0: Lucky Shot scene and its plan (screen pixels); scene null when no Lucky Shot board is visible. */
+    private final com.bitaim.carromaim.cv.LuckyAuto luckyAuto=new com.bitaim.carromaim.cv.LuckyAuto();
+    public void onLuckyShot(com.bitaim.carromaim.cv.LuckyShot.Scene scene,com.bitaim.carromaim.cv.LuckyShot.Plan plan,boolean planning){
+        // The game's aim dots feed the closed-loop aim of a held auto shot, as in carrom play.
+        if(scene!=null&&scene.guideDots>0&&!Float.isNaN(scene.guideX)){
+            latestGuide=new float[]{scene.guideX,scene.guideY,scene.guideDots,scene.striker.x,scene.striker.y};latestGuideAt=android.os.SystemClock.uptimeMillis();
+        }
+        runOnMain(() -> {
+            if(aimOverlayView==null)return;
+            aimOverlayView.setLuckyShot(scene,plan,planning);
+            if(!autoPlay.enabled()||com.bitaim.carromaim.capture.PcLink.connected()){if(scene==null)luckyAuto.reset();return;}
+            AutoPlayController.Action action=luckyAuto.update(scene,plan,planning,android.os.SystemClock.uptimeMillis());
+            String note=luckyAuto.consumeNote();if(note!=null){appendEvent(note);Log.i("BitAim/Lucky",note);}
+            if(scene!=null)aimOverlayView.setAutoStatus(luckyAuto.status());
+            if(action==null)return;
+            GameGestureService gestures=GameGestureService.INSTANCE;
+            aimOverlayView.setLuckyFiring(true); // our lines must not cover the game's aim dots during the hold
+            boolean sent=gestures!=null&&gestures.sendCorrected(action,aimSource,(success,aim)->{
+                runOnMain(()->{if(aimOverlayView!=null)aimOverlayView.setLuckyFiring(false);});
+                if(aim!=null)appendEvent(String.format(java.util.Locale.US,"LUCKY AIM initial=%.2f° final=%.2f° steps=%d dots=%d release=(%.0f,%.0f)",aim.initialDeg,aim.finalDeg,aim.steps,aim.dots,aim.x2,aim.y2));
+                runOnMain(()->luckyAuto.complete(success));
+            });
+            if(!sent){aimOverlayView.setLuckyFiring(false);luckyAuto.complete(false);appendEvent("LUCKY gesture not sent (game window or gesture service unavailable)");}
+        });
+    }
+
+    private final com.bitaim.carromaim.cv.DiscMemory discMemory=new com.bitaim.carromaim.cv.DiscMemory();
     public void onDetectedState(GameState s) {
         strikerBaseline.apply(s);
+        // 4.12.1: discs hidden for a moment by our own lines or the aim dots stay in the plan (live 23:33:51).
+        int restored=discMemory.apply(s,android.os.SystemClock.uptimeMillis());
+        if(restored>0)Log.i("BitAim/Discs","kept "+restored+" hidden disc(s) in the plan");
         com.bitaim.carromaim.cv.DiscSeparation.apply(s);
         if(s!=null&&s.aimGuideDots>0&&!Float.isNaN(s.aimGuideX)){
             float[] d=com.bitaim.carromaim.cv.AimGuideDetector.shotDirection(s.aimGuideX,s.aimGuideY);

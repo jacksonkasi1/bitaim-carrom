@@ -1,0 +1,32 @@
+23:07:45.386 status waiting for your turn
+23:07:46.145 status waiting for a steady board (0/4)
+23:07:46.321 status waiting for a steady board (1/4)
+23:07:46.523 status waiting for a steady board (2/4)
+23:07:46.709 status waiting for a steady board (0/4)
+23:07:47.152 status waiting for a steady board (1/4)
+23:07:47.354 status waiting for a steady board (0/4)
+23:07:47.734 status waiting for a steady board (1/4)
+23:07:47.916 status waiting for a steady board (0/4)
+23:07:48.098 status waiting for a steady board (1/4)
+23:07:48.285 status waiting for a steady board (0/4)
+23:07:48.466 status waiting for a steady board (1/4)
+23:07:48.630 status waiting for a steady board (2/4)
+23:07:48.830 status waiting for a steady board (3/4)
+23:07:48.995 status board changed, re-planning (4 s to relaxed mode)
+23:07:49.161 status board changed, re-planning (3 s to relaxed mode)
+23:07:49.550 status waiting for a steady board (0/4)
+23:07:50.025 status waiting for a steady board (1/4)
+23:07:50.207 status waiting for a steady board (2/4)
+23:07:50.374 status waiting for a steady board (3/4)
+23:07:50.540 status board changed, re-planning (2 s to relaxed mode)
+23:07:51.237 status board changed, re-planning (1 s to relaxed mode)
+23:07:52.305 status board changed, re-planning (0 s to relaxed mode)
+23:07:53.148 status board changed, re-planning
+23:07:56.184 INCIDENT auto-stall {"status":"board changed, re-planning","turnMs":10043}
+23:08:01.630 status waiting for a steady board (0/4)
+23:08:02.113 status waiting for a steady board (1/4)
+23:08:02.278 status waiting for a steady board (2/4)
+23:08:02.460 status waiting for a steady board (3/4)
+23:08:02.643 status board changed, re-planning
+23:08:04.187 status waiting for a steady board (0/4)
+23:08:04.735 status waiting for your turn

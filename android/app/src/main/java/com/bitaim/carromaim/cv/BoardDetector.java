@@ -63,6 +63,10 @@ public class BoardDetector {
     public void setMaxRadiusFrac(float v) { /* radii now derived from board size */ }
     public synchronized void setParam2(double v) { param2 = Math.max(12, Math.min(v, 40)); }
 
+    private LuckyShot.Scene lucky;
+    /** Lucky Shot scene found by the last {@link #detectMat} call (source pixels), or null. */
+    public synchronized LuckyShot.Scene lucky() { return lucky; }
+
     private final Mat frame = new Mat(), small = new Mat(), gray = new Mat(),
                       bgr = new Mat(), hsv = new Mat();
 
@@ -91,8 +95,14 @@ public class BoardDetector {
 
         // ── 1. Board ────────────────────────────────────────────────────────
         Rect b = findSurface(procH);
-        if (b == null) {assignedTeams=null;return null;}
-        float bw = b.width;
+        lucky = null;
+        if (b == null) {
+            assignedTeams=null;
+            // 4.11.0: no light-wood carrom board: maybe the Lucky Shot mini-game (dark red board, ring target).
+            try { lucky = LuckyShot.detect(hsv, gray, scale); } catch (Throwable t) { lucky = null; }
+            return null;
+        }
+        float bw = b.width;paintBoard = b;
         TeamMatcher teams = new TeamMatcher(hsv);
         if(teams.freestyle)assignedTeams=null;
         else if(teams.known)assignedTeams=teams;
@@ -105,6 +115,7 @@ public class BoardDetector {
         Imgproc.HoughCircles(gray, circles, Imgproc.HOUGH_GRADIENT, 1.2,
                 bw * 0.03, 90, param2, minR, maxR);
 
+        paintHue = findPaintHue(circles, b);
         List<float[]> pockets = findPocketCenters(b); // x, y
         List<float[]> coins   = new ArrayList<>();   // x, y, r, color
         float[] striker = null; float strikerScore = -1;
@@ -136,6 +147,24 @@ public class BoardDetector {
         // The light-wood mask stops at the shaded rail. Pieces touching that
         // rail still occupy the board and must remain collision obstacles.
         float railAllowance = bw * 0.035f;
+        // 4.12.4: with real pockets found, the playing area reaches the rails next to them, also where the skin's rail
+        // band is darker than the light wood (a coin touching the left rail was dropped, live 12:17:32: "no route").
+        float areaL = b.x - railAllowance, areaR = b.x + b.width + railAllowance, areaT = b.y - railAllowance, areaB = b.y + b.height + railAllowance;
+        if (pockets.size() >= 2) {
+            // pockets on each side of the board centre; a side with none found mirrors the other (the board is square
+            // and centred), so two pockets are enough
+            float mx = b.x + bw / 2f, my = b.y + b.height / 2f;
+            float pl = Float.NaN, pr = Float.NaN, pt = Float.NaN, pb = Float.NaN;
+            for (float[] p : pockets) {
+                if (p[0] < mx) pl = Float.isNaN(pl) ? p[0] : Math.min(pl, p[0]); else pr = Float.isNaN(pr) ? p[0] : Math.max(pr, p[0]);
+                if (p[1] < my) pt = Float.isNaN(pt) ? p[1] : Math.min(pt, p[1]); else pb = Float.isNaN(pb) ? p[1] : Math.max(pb, p[1]);
+            }
+            if (Float.isNaN(pl)) pl = 2 * mx - pr; if (Float.isNaN(pr)) pr = 2 * mx - pl;
+            if (Float.isNaN(pt)) pt = 2 * my - pb; if (Float.isNaN(pb)) pb = 2 * my - pt;
+            // the rails lie 0.05 board widths outside the pocket centres (same rails as PhysicsVerifier)
+            areaL = Math.min(areaL, pl - bw * 0.05f); areaR = Math.max(areaR, pr + bw * 0.05f);
+            areaT = Math.min(areaT, pt - bw * 0.05f); areaB = Math.max(areaB, pb + bw * 0.05f);
+        }
 
         for (int i = 0; i < denseCount+coinCount + strikerCircles.cols(); i++) {
             boolean densePass=i<denseCount;
@@ -145,12 +174,9 @@ public class BoardDetector {
             float cx = (float) d[0], cy = (float) d[1], r = (float) d[2];
             if (strikerPass) { cx += stripX; cy += stripY; }
             if(densePass){cx+=denseX;cy+=denseY;}
-            if (cx < b.x - railAllowance || cx > b.x + b.width + railAllowance
-                    || cy < b.y - railAllowance || cy > b.y + b.height + railAllowance) continue;
-            boolean fullyInside = cx - r * 0.8f > b.x - railAllowance
-                    && cx + r * 0.8f < b.x + b.width + railAllowance
-                    && cy - r * 0.8f > b.y - railAllowance
-                    && cy + r * 0.8f < b.y + b.height + railAllowance;
+            if (cx < areaL || cx > areaR || cy < areaT || cy > areaB) continue;
+            boolean fullyInside = cx - r * 0.8f > areaL && cx + r * 0.8f < areaR
+                    && cy - r * 0.8f > areaT && cy + r * 0.8f < areaB;
             double[] c = meanHsv((int) cx, (int) cy, Math.max(2, (int) (r * 0.35f)));
             if (c == null) continue;
             double h = c[0], s = c[1], v = c[2];
@@ -186,15 +212,16 @@ public class BoardDetector {
                     && cx > b.x + bw * 0.15f && cx < b.x + bw * 0.85f) {
                 float score = r - Math.abs(cy - baseY) * 0.3f + (h > 85 && h < 135 ? bw * 0.02f : 0);
                 if (score > strikerScore) {
-                    if (striker != null && striker[2] <= bw * 0.042f) coins.add(new float[]{striker[0], striker[1], striker[2], striker[3]});
+                    if (striker != null && striker[2] <= bw * 0.042f && !flatPaintAt(striker[0], striker[1], striker[2])) coins.add(new float[]{striker[0], striker[1], striker[2], striker[3]});
                     strikerScore = score; striker = new float[]{cx, cy, r, colorOf(h, s, v)};
-                } else if (r <= bw * 0.042f && fullyInside) {
+                } else if (r <= bw * 0.042f && fullyInside && !flatRed(cx, cy, r, h, s)) {
                     coins.add(new float[]{cx, cy, r, colorOf(h, s, v)}); // a coin on the baseline
                 }
                 continue;
             }
             if (strikerPass) continue;
             if (r > bw * 0.042f || !fullyInside) continue; // false circle
+            if (flatRed(cx, cy, r, h, s)) continue;
             coins.add(new float[]{cx, cy, r, colorOf(h, s, v)});
         }
         // Fallback: at either end of the baseline the striker sits on the painted end circle, which can defeat
@@ -232,6 +259,7 @@ public class BoardDetector {
 
         // ── Build result (scaled back to source pixels) ─────────────────────
         GameState st = new GameState();
+        st.covered = covered(System.currentTimeMillis());
         st.frameId=frameCounter.incrementAndGet();
         st.board = new RectF(b.x / scale, b.y / scale, (b.x + b.width) / scale, (b.y + b.height) / scale);
         float sbw = st.board.width();
@@ -243,7 +271,8 @@ public class BoardDetector {
         if(striker!=null){float knob=findSliderKnob(gray,striker[0],striker[2],b.y+b.height,bw);if(!Float.isNaN(knob))st.sliderY=knob/scale;}
         if(striker!=null){
             float[] guide=AimGuideDetector.detect(hsv,striker[0],striker[1],bw,b.y);
-            if(guide!=null){st.aimGuideX=guide[0];st.aimGuideY=guide[1];st.aimGuideDots=(int)guide[2];}
+            if(guide!=null){st.aimGuideX=guide[0];st.aimGuideY=guide[1];st.aimGuideDots=(int)guide[2];
+                st.aimPower=AimGuideDetector.powerArrow(hsv,striker[0],striker[1],guide[0],guide[1],bw,striker[2],new float[]{b.x-bw*.04f,b.y-bw*.04f,b.x+b.width+bw*.04f,b.y+b.height+bw*.04f});}
         }
         st.teamKnown = targetColourKey!=TargetColourLock.AUTO||effectiveAllColours||teams.known;
         st.targetColourKey=targetColourKey;
@@ -298,10 +327,13 @@ public class BoardDetector {
             Rect r = Imgproc.boundingRect(contour);
             float x = r.x + r.width * 0.5f, y = r.y + r.height * 0.5f;
             float diameter = (r.width + r.height) * 0.5f;
-            boolean corner = x >= board.x && x <= board.x + board.width
-                    && y >= board.y && y <= board.y + board.height
-                    && Math.min(x - board.x, board.x + board.width - x) < board.width * 0.12f
-                    && Math.min(y - board.y, board.y + board.height - y) < board.width * 0.12f;
+            // 4.12.4 (live 12:17, blue-frame skin): the pockets sit on a darker rail band outside the light-wood
+            // rectangle; they were not found, so the rails were guessed and a coin on that band was dropped.
+            float m = board.width * 0.07f;
+            boolean corner = x >= board.x - m && x <= board.x + board.width + m
+                    && y >= board.y - m && y <= board.y + board.height + m
+                    && Math.min(x - (board.x - m), board.x + board.width + m - x) < board.width * 0.19f
+                    && Math.min(y - (board.y - m), board.y + board.height + m - y) < board.width * 0.19f;
             if (corner && diameter > board.width * 0.065f && diameter < board.width * 0.14f
                     && r.width > r.height * 0.8f && r.width < r.height * 1.25f
                     && Imgproc.contourArea(contour) > r.width * r.height * 0.6f) {
@@ -313,9 +345,24 @@ public class BoardDetector {
         return out;
     }
 
+    /** Share of the board rectangle that shows light wood (raw mask), last frame. */
+    private float woodFraction;
+    /** 4.11.0: recent clean-board wood share. Board skins differ (0.6-0.85), so "covered" is judged against the same
+     *  board a moment earlier: the in-game chat panel over the board (live 19:28-19:30) cut it by about half. */
+    private float woodRef = -1; private long woodRefAt;
+    static final float COVERED_SHARE = .80f;
+    private boolean covered(long now) {
+        if (woodRef < 0 || now - woodRefAt > 120_000) { woodRef = woodFraction; woodRefAt = now; return false; }
+        if (woodFraction >= woodRef * COVERED_SHARE) {
+            woodRef = Math.max(woodFraction, woodRef * .98f + woodFraction * .02f); woodRefAt = now; return false;
+        }
+        return true;
+    }
+
     private Rect findSurface(int procH) {
         Mat mask = new Mat();
         Core.inRange(hsv, new Scalar(6, 55, 170), new Scalar(24, 165, 255), mask);
+        Mat raw = mask.clone();
         Mat k = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(25, 25));
         Imgproc.morphologyEx(mask, mask, Imgproc.MORPH_CLOSE, k);
         List<MatOfPoint> contours = new ArrayList<>();
@@ -327,7 +374,8 @@ public class BoardDetector {
             if (a > best) { best = a; r = Imgproc.boundingRect(c); }
             c.release();
         }
-        mask.release(); k.release(); hier.release();
+        woodFraction = r == null ? 0 : Core.countNonZero(raw.submat(r)) / (float) Math.max(1, r.area());
+        raw.release(); mask.release(); k.release(); hier.release();
         if (r == null || best < PROC_WIDTH * procH * 0.08) return null;
         // A carrom board is square — reject odd shapes (menus, banners)
         float ratio = r.width / (float) r.height;
@@ -420,6 +468,53 @@ public class BoardDetector {
     private static final float[][] DECORATIONS = {
             {.21f, .14f}, {.79f, .14f}, {.14f, .21f}, {.86f, .21f},
             {.14f, .79f}, {.86f, .79f}, {.21f, .855f}, {.79f, .855f}};
+    /** 4.12.4 (live 12:14-12:17, blue-frame skin): the board's painted red circles were detected as queens. Paint is
+     *  flat (inner spread of saturation ~3-5, brightness ~4-5); a real queen has rings and shine (26-31, 16-20). */
+    /** Painted board circle, not a disc: a coloured spot with an almost flat inside. 4.12.4: the red circles of the
+     *  blue-frame skin (live 12:17). 4.13.0: any colour (live 22:41, green-circle skin: 7 green baseline-end circles,
+     *  value sd 4-6, were opponent discs and blocked every route; real discs measure 17+). White and black discs
+     *  (saturation under 60) are never paint. */
+    /** {@link #flatRed} for a candidate whose colour was not kept (a replaced striker candidate). */
+    /** Board rectangle (processing pixels) of the frame being detected, for the painted-spot check. */
+    private Rect paintBoard;
+    /** Hue of the skin's painted circles in this frame, or NaN: three or more flat, coloured circles of one hue on the
+     *  painted spots. A single flat disc that happens to lie on a spot (plain light-blue discs) never makes a paint hue. */
+    private double paintHue = Double.NaN;
+    private static double hueGap(double a, double b) { double d = Math.abs(a - b) % 180; return Math.min(d, 180 - d); }
+    private double findPaintHue(Mat circles, Rect b) {
+        List<Double> hues = new ArrayList<>();
+        for (int i = 0; i < circles.cols(); i++) {
+            double[] d = circles.get(0, i); if (d == null || d.length < 3) continue;
+            float cx = (float) d[0], cy = (float) d[1], r = (float) d[2];
+            if (!nearDecoration(cx, cy, b)) continue;
+            double[] c = meanHsv((int) cx, (int) cy, Math.max(2, (int) (r * 0.35f)));
+            if (c == null || c[1] < 60 || !flatCore(cx, cy, r)) continue;
+            hues.add(c[0]);
+        }
+        for (double h : hues) { int n = 0; for (double o : hues) if (hueGap(h, o) <= 8) n++; if (n >= 3) return h; }
+        return Double.NaN;
+    }
+    private boolean flatCore(float cx, float cy, float r) {
+        int k = Math.max(2, Math.round(Math.min(r, 17f) * 0.55f));
+        int x0 = Math.max(0, (int) cx - k), y0 = Math.max(0, (int) cy - k), x1 = Math.min(hsv.cols(), (int) cx + k), y1 = Math.min(hsv.rows(), (int) cy + k);
+        if (x1 - x0 < 3 || y1 - y0 < 3) return false;
+        org.opencv.core.MatOfDouble mean = new org.opencv.core.MatOfDouble(), sd = new org.opencv.core.MatOfDouble();
+        Core.meanStdDev(hsv.submat(y0, y1, x0, x1), mean, sd);
+        double[] d = sd.toArray(); mean.release(); sd.release();
+        return d[2] < 11;
+    }
+    private boolean flatPaintAt(float cx, float cy, float r) {
+        double[] c = meanHsv((int) cx, (int) cy, Math.max(2, (int) (r * 0.35f)));
+        return c != null && flatRed(cx, cy, r, c[0], c[1]);
+    }
+    private boolean flatRed(float cx, float cy, float r, double h, double s) {
+        // red paint anywhere (4.12.4); other colours only on the board's painted circle spots (baseline ends): plain
+        // light-blue discs of the two-blues skin are as flat as paint (live 2026-11-08)
+        boolean red = (h <= 10 || h >= 170) && s >= 120;
+        if (!red && !(s >= 60 && !Double.isNaN(paintHue) && hueGap(h, paintHue) <= 8 && paintBoard != null && nearDecoration(cx, cy, paintBoard))) return false;
+        return flatCore(cx, cy, r); // real queens 16-20; paint <= 9 even with a coin overlapping it (live 12:16, 413,782)
+    }
+
     private static boolean nearDecoration(float x, float y, Rect board) {
         for (float[] spot : DECORATIONS) {
             if (dist(x, y, board.x + board.width * spot[0], board.y + board.height * spot[1])

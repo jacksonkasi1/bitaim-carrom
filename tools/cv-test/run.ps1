@@ -11,7 +11,7 @@ if (!(Test-Path $jar)) {
 }
 $inputs = @($Screenshots | ForEach-Object { (Resolve-Path -LiteralPath $_).Path })
 $sources = @(Get-ChildItem "$here/stubs" -Filter '*.java' -Recurse | ForEach-Object FullName)
-$sources += @('BoardDetector','Coin','GameState','ShotPlanner','TeamMatcher','ShotTracker','RoutePlanner','PhysicsVerifier','AutoPlayController','GoldSceneLock','ClusterPlanner','AimGuideDetector','AimAlignment','TargetColourLock','QueenRule','OpeningPlanner','SweepPlanner','AimCorrection','ShotLogger','StrikerBaseline','OpponentWatcher','DiscSeparation') | ForEach-Object { "$src/$_.java" }
+$sources += @('BoardDetector','Coin','GameState','ShotPlanner','TeamMatcher','ShotTracker','RoutePlanner','PhysicsVerifier','AutoPlayController','GoldSceneLock','ClusterPlanner','AimGuideDetector','AimAlignment','TargetColourLock','QueenRule','OpeningPlanner','SweepPlanner','AimCorrection','ShotLogger','StrikerBaseline','OpponentWatcher','DiscSeparation','LuckyShot','LuckyAuto','SpeedProfile','DiscMemory','PowerMeter') | ForEach-Object { "$src/$_.java" }
 $sources += "$here/Harness.java"
 $sources += "$here/Regression.java"
 $sources += "$here/PlannerRegression.java"
@@ -34,6 +34,13 @@ $sources += "$here/BaselineSweepRegression.java"
 $sources += "$here/OpponentWatcherRegression.java"
 $sources += "$here/TwoBluesRegression.java"
 $sources += "$here/BackwardFoulRegression.java"
+$sources += "$here/LuckyShotRegression.java"
+$sources += "$here/CoveredBoardRegression.java"
+$sources += "$here/DiscMemoryRegression.java"
+$sources += "$here/LuckyCornerRegression.java"
+$sources += "$here/RailCoinRegression.java"
+$sources += "$here/PowerMeterRegression.java"
+$sources += "$here/PaintedCircleRegression.java"
 & "$jdk/bin/javac.exe" -encoding UTF-8 -d "$here/classes" -cp $jar @sources
 if ($LASTEXITCODE -ne 0) { throw 'CV test compilation failed' }
 Push-Location $here

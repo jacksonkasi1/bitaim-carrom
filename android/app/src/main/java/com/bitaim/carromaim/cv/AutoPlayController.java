@@ -35,7 +35,7 @@ public final class AutoPlayController {
     // inside the reachable range land at 0.8-0.97 of the distance, so a mild 0.85 gain plus a slower drag is used.
     /** Aim-correction time for a normal shot and for a hurried one (hurried shots after LATE_MS use a single drag). */
     /** With no route at all this far into the turn, a straight break is fired rather than losing the turn. */
-    static final long BREAK_FALLBACK_MS=9000;
+    static final long BREAK_FALLBACK_MS=9000, BOARD_CHANGED_FALLBACK_MS=8000;
     static final int AIM_BUDGET_MS=3000, HURRIED_AIM_BUDGET_MS=2300; static final long LATE_MS=14000;
     // Practice 22:58:57: a hurried shot read a 4.2° aim error but the 1.5 s budget allowed no correction step.
     private long turnStart=-1;
@@ -180,7 +180,11 @@ public final class AutoPlayController {
         // null). Break only after 2.5 s with no route at all.
         if(route!=null)lastRouteAt=now;
         boolean noRouteLong=now-lastRouteAt>=NO_ROUTE_BREAK_MS;
-        if(reject!=null&&route==null&&noRouteLong&&!s.coins.isEmpty()&&(turn>=BREAK_FALLBACK_MS||s.openingCluster&&turn>=1500)){
+        // 4.13.3 (overnight practice 01:11-01:14: every opening turn ended in "board changed, re-planning" until the
+        // timer ran out; 57 such stalls in the saved logs): a route that never settles counts as no route after
+        // BOARD_CHANGED_FALLBACK_MS, so the fallback shot is played instead of losing the turn.
+        boolean neverSettles=reject!=null&&reject.startsWith("board changed")&&turn>=BOARD_CHANGED_FALLBACK_MS;
+        if(reject!=null&&(route==null&&noRouteLong||neverSettles)&&!s.coins.isEmpty()&&(turn>=BREAK_FALLBACK_MS||neverSettles||s.openingCluster&&turn>=1500)){
             // Practice 23:31 (opening): no route at all after the ★ slide, so the whole turn was lost. A lost turn is
             // the worst outcome: break straight at the middle of the discs at break power instead.
             // 4.9.9 (live 11:25:01, mid-game): the full-power blast at the centre of every disc hit the own disc touching

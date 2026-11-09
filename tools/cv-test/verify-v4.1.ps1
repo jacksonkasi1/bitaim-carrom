@@ -30,6 +30,22 @@ if($LASTEXITCODE -ne 0){throw 'OrangeSkinRegression failed'}
 if($LASTEXITCODE -ne 0){throw 'TwoBluesRegression failed'}
 & "$jdk/bin/java.exe" -cp $cp BackwardFoulRegression "$PSScriptRoot/fixtures/backward-direct-foul-165158.jsonl"
 if($LASTEXITCODE -ne 0){throw 'BackwardFoulRegression failed'}
+& "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp LuckyShotRegression "$root/test-results/live-lucky-shot-20261108.jpg"
+if($LASTEXITCODE -ne 0){throw 'LuckyShotRegression failed'}
+& "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp LuckyShotRegression "$root/test-results/live-lucky-shot-20261109.png"
+if($LASTEXITCODE -ne 0){throw 'LuckyShotRegression (12:12 frame) failed'}
+& "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp LuckyCornerRegression "$root/test-results/synthetic-lucky-corner.png" "$root/test-results/synthetic-lucky-bottomleft.png"
+if($LASTEXITCODE -ne 0){throw 'LuckyCornerRegression failed'}
+& "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp CoveredBoardRegression "$root/test-results/practice-board-clean.png"
+if($LASTEXITCODE -ne 0){throw 'CoveredBoardRegression failed'}
+& "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp RailCoinRegression "$root/test-results/lost-match-rail-coin.png"
+if($LASTEXITCODE -ne 0){throw 'RailCoinRegression failed'}
+& "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp PowerMeterRegression
+if($LASTEXITCODE -ne 0){throw 'PowerMeterRegression failed'}
+& "$jdk/bin/java.exe" '-Djava.io.tmpdir=D:/Tools/tmp' -cp $cp PaintedCircleRegression "$root/test-results/green-circle-board.png"
+if($LASTEXITCODE -ne 0){throw 'PaintedCircleRegression failed'}
+& "$jdk/bin/java.exe" -cp $cp DiscMemoryRegression "$PSScriptRoot/fixtures/hidden-white-233351.jsonl"
+if($LASTEXITCODE -ne 0){throw 'DiscMemoryRegression failed'}
 & "$jdk/bin/java.exe" -cp $cp ShotLoggerRegression
 if($LASTEXITCODE -ne 0){throw 'Shot logger regression failed'}
 & "$jdk/bin/java.exe" -cp $cp AutoPlayRegression

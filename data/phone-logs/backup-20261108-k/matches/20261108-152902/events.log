@@ -1,0 +1,27 @@
+15:29:02.082 status waiting for the board
+15:31:28.044 PC SHOT from (539,1573) to (558,1759) shooting: Open paths +2 (model)
+15:31:29.829 PC AIM initial=-2.66° final=-0.03° steps=1 dots=14
+15:31:36.970 PC SLIDE from (570,2110) to (690,2110) moving striker to ★
+15:31:37.994 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:31:40.248 PC SHOT from (687,1573) to (952,1621) shooting: Pot via cascade (model)
+15:31:41.525 PC AIM initial=0.13° final=0.13° steps=0 dots=15
+15:31:57.255 PC SLIDE from (534,2110) to (214,2110) moving striker to ★
+15:31:58.302 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:31:58.576 PC SLIDE from (259,2108) to (263,2108) correcting striker spot (★)
+15:31:59.613 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:32:00.713 PC SHOT from (268,1573) to (389,1813) shooting: Pot via cascade (model)
+15:32:02.398 PC AIM initial=-3.10° final=-0.01° steps=1 dots=13
+15:32:17.146 PC SLIDE from (572,2102) to (836,2102) moving striker to ★
+15:32:18.172 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:32:18.369 PC SLIDE from (811,2108) to (803,2108) correcting striker spot (★)
+15:32:19.407 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:32:20.136 PC SHOT from (815,1571) to (731,1720) shooting: Direct route
+15:32:21.877 PC AIM initial=-0.92° final=-0.10° steps=1 dots=14
+15:32:28.668 PC SHOT from (584,1571) to (531,1787) shooting: Pot + open cluster (model)
+15:32:30.857 PC AIM initial=-2.99° final=0.07° steps=2 dots=14
+15:32:34.446 PC SLIDE from (583,2107) to (619,2107) moving striker to ★
+15:32:35.494 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:32:35.877 PC SLIDE from (611,2107) to (619,2107) correcting striker spot (★)
+15:32:36.916 PC AIM initial=NaN° final=NaN° steps=0 dots=0
+15:32:38.202 PC SHOT from (604,1571) to (526,1741) shooting: Pot via cascade (model)
+15:32:40.437 PC AIM initial=0.33° final=-0.18° steps=2 dots=15

@@ -84,7 +84,9 @@ public class AimOverlayView extends View {
 
         aimLinePaint      = stroke(Color.parseColor("#00E5FF"), 2.0f);
 
-        coinPathPaint     = stroke(Color.parseColor("#FF8A00"), 1.6f);
+        // 4.13.2: paler orange / gold (saturation under 200): the power-arrow detector reads strongly saturated warm
+        // colours, and these lines along the aim made a 90% pull read 100% (live 23:10:58, 23:29:02).
+        coinPathPaint     = stroke(Color.parseColor("#FFB060"), 1.6f);
 
         // Snap: bright lime dashes from coin to pocket
         snapLinePaint     = stroke(Color.parseColor("#22FF6E"), 1.6f);
@@ -99,7 +101,7 @@ public class AimOverlayView extends View {
         pocketGlowPaint.setShadowLayer(16 * dp, 0, 0, Color.parseColor("#AA22C55E"));
 
         strikerFillPaint  = fill(Color.parseColor("#66FFFFFF"));
-        strikerRingPaint  = stroke(Color.parseColor("#FFD700"), 2.4f);
+        strikerRingPaint  = stroke(Color.parseColor("#FFE070"), 2.4f);
 
         coinOutlinePaint  = stroke(Color.parseColor("#99FFFFFF"), 1.5f);
         blackFillPaint    = fill(Color.parseColor("#AA111111"));
@@ -130,11 +132,11 @@ public class AimOverlayView extends View {
         ghostPaint = stroke(Color.parseColor("#00E5FF"), 1.0f);
         ghostPaint.setPathEffect(new DashPathEffect(new float[]{4*dp, 4*dp}, 0));
         pocketRingPaint = stroke(Color.parseColor("#22FF6E"), 1.8f);
-        goldPaint     = stroke(Color.parseColor("#FFD700"), 1.6f);
-        goldDashPaint = stroke(Color.parseColor("#FFD700"), 1.6f);
+        goldPaint     = stroke(Color.parseColor("#FFE070"), 1.6f);
+        goldDashPaint = stroke(Color.parseColor("#FFE070"), 1.6f);
         goldDashPaint.setPathEffect(new DashPathEffect(new float[]{6*dp, 6*dp}, 0));
         goldTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        goldTextPaint.setColor(Color.parseColor("#FFD700"));
+        goldTextPaint.setColor(Color.parseColor("#FFE070"));
         goldTextPaint.setTextSize(16 * dp);
 
         altStrikerPaint = stroke(Color.parseColor("#9900E5FF"), 1.6f);
@@ -427,6 +429,7 @@ public class AimOverlayView extends View {
         try {
             if(autoPlayArmed)canvas.drawText("AUTO • "+(autoStatus.isEmpty()?"armed":autoStatus)+" • tap ★ to stop",24*dp,65*dp,textPaint);
             if(remoteMode){drawRemote(canvas);return;}
+            if(detected==null&&luckyScene!=null){drawLucky(canvas);return;}
             if(autoMode){drawAuto(canvas,detected);return;}
             drawHint(canvas,detected==null?missingBoardHint()
                     :!detected.teamKnown?"Team badges hidden — tap icon to return to play":pickHint);
@@ -435,6 +438,52 @@ public class AimOverlayView extends View {
             android.util.Log.w("BitAim/Overlay", "Draw failed: " + t);
             ErrorHook hook=errorHook;if(hook!=null)hook.report("draw",t);
         }
+    }
+
+    // ── Lucky Shot (4.11.0) ──────────────────────────────────────────────────
+    private com.bitaim.carromaim.cv.LuckyShot.Scene luckyScene;
+    private com.bitaim.carromaim.cv.LuckyShot.Plan luckyPlan;
+    private boolean luckyPlanning,luckyFiring;
+    public void setLuckyFiring(boolean firing){luckyFiring=firing;postInvalidate();}
+    private Paint luckyPullPaint,luckySpotPaint;
+    public void setLuckyShot(com.bitaim.carromaim.cv.LuckyShot.Scene scene,com.bitaim.carromaim.cv.LuckyShot.Plan plan,boolean planning){
+        if(scene==null&&luckyScene==null)return;
+        luckyScene=scene;luckyPlan=plan;luckyPlanning=planning;
+        postInvalidate();
+    }
+    private void drawLucky(Canvas canvas){
+        com.bitaim.carromaim.cv.LuckyShot.Scene sc=luckyScene;com.bitaim.carromaim.cv.LuckyShot.Plan p=luckyPlan;
+        if(luckyPullPaint==null){
+            luckyPullPaint=fill(Color.parseColor("#22FF6E"));luckyPullPaint.setShadowLayer(6*dp,0,0,Color.BLACK);
+            luckySpotPaint=stroke(Color.parseColor("#FFD700"),3f);
+        }
+        canvas.drawCircle(sc.target.x,sc.target.y,6*dp,targetCrossPaint);
+        float y=getHeight()-150*dp;
+        if(p==null){
+            canvas.drawText(luckyPlanning?"LUCKY SHOT • finding the best shot…":"LUCKY SHOT • no clear shot found",24*dp,y,textPaint);
+            return;
+        }
+        if(luckyFiring){canvas.drawText("LUCKY SHOT • shooting: "+p.kind+" • power "+Math.round(p.powerPercent)+"%",24*dp,y,textPaint);return;}
+        float sx=p.strikerX,sy=p.baseY,r=sc.strikerR;
+        // Better spot (only when the striker can be moved and it is clearly more forgiving).
+        if(p.better!=null){
+            canvas.drawCircle(p.better.strikerX,p.better.baseY,r,luckySpotPaint);
+            canvas.drawText("★ easier from here",p.better.strikerX-40*dp,p.better.baseY+r+16*dp,smallTextPaint);
+        }
+        // Striker spot, striker path to the puck, puck path to its modelled resting point.
+        canvas.drawCircle(sx,sy,r,strikerRingPaint);
+        drawPolyline(canvas,p.strikerPath,aimLinePaint);
+        drawPolyline(canvas,p.puckPath,coinPathPaint);
+        canvas.drawCircle(p.rest.x,p.rest.y,sc.puckR,goldPaint);
+        // Pull point: drag back from the striker to here (opposite the aim) for the planned power.
+        float px=sx-p.ux*p.pullPx,py=sy-p.uy*p.pullPx;
+        canvas.drawLine(sx,sy,px,py,dragHintPaint);
+        canvas.drawCircle(px,py,7*dp,luckyPullPaint);
+        canvas.drawText(autoPlayArmed?"LUCKY SHOT • auto play will shoot this":"LUCKY SHOT • aim on the blue line • pull to the green dot",24*dp,y,textPaint);
+        canvas.drawText(p.kind+" • power "+Math.round(p.powerPercent)+"% • model: "+p.zone,24*dp,y+20*dp,smallTextPaint);
+    }
+    private static void drawPolyline(Canvas canvas,List<PointF> pts,Paint paint){
+        for(int i=0;i+1<pts.size();i++)canvas.drawLine(pts.get(i).x,pts.get(i).y,pts.get(i+1).x,pts.get(i+1).y,paint);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -452,6 +501,8 @@ public class AimOverlayView extends View {
     /** Immutable result of one planner pass, applied on the UI thread. */
     private static final class PlanResult {
         GameState state; ShotPlanner.Shot shot; Coin selected; String position=""; String label;
+        /** 4.11.2: quick first pass (Pro style); the full pass follows on the same board. */
+        boolean quick;
         List<ShotPlanner.Shot> alternatives=new java.util.ArrayList<>();
     }
     private GameState autoState;
@@ -494,39 +545,62 @@ public class AimOverlayView extends View {
     private void planLoop(){
         GameState s;
         while((s=pendingPlan.getAndSet(null))!=null&&!plannerStopped&&!Thread.currentThread().isInterrupted()){
-            PlanResult result=new PlanResult();result.state=s;
             PlanResult last=lastPlanned;
-            if(last!=null&&sameScene(last.state,s)){
+            boolean same=last!=null&&sameScene(last.state,s);
+            if(same&&!last.quick){
                 // Unchanged board and striker: re-planning would only burn CPU and battery.
+                PlanResult result=new PlanResult();result.state=s;
                 result.shot=last.shot;result.selected=last.selected;result.position=last.position;result.alternatives=last.alternatives;
                 final PlanResult done=result;
                 post(() -> {if(!plannerStopped)applyPlan(done);});
                 continue;
             }
-            try{
-                synchronized(shotTracker){
-                    result.shot=shotTracker.update(s);
-                    result.selected=shotTracker.selectedTarget();
-                    result.position=shotTracker.routePosition();
-                    result.alternatives=shotTracker.alternatives();
-                }
-                Coin goldTarget=result.selected;
-                if(goldTarget==null&&result.shot!=null)goldTarget=result.shot.coin;
-                int signature=goldSceneLock.update(s,goldTarget);
-                lastPlanned=result;
-                final PlanResult done=result;final int sig=signature;final Coin target=goldTarget;final GameState frame=s;
-                post(() -> {
-                    if(plannerStopped)return;
-                    applyPlan(done);
-                    if(sig!=goldSignature){goldSignature=sig;requestGold(frame,target,sig);}
-                });
-            }catch(Throwable t){
-                android.util.Log.w("BitAim/Plan","Planner failed: "+t);
-                ErrorHook hook=errorHook;if(hook!=null)hook.report("planner",t);
-                final PlanResult done=result;done.shot=null;
-                post(() -> {if(!plannerStopped)applyPlan(done);});
+            // 4.11.2: Pro style is two passes: a quick plan shown at once, then the full plan (openers, full sweep,
+            // more chance estimates) if no newer board arrived meanwhile. Safe style is one (already quick) pass.
+            // 4.12.0: the speed level decides: quick pass only (Ultra, Max), quick then full in Pro style (Fast), or
+            // the full pass every time (Deep).
+            if(com.bitaim.carromaim.cv.SpeedProfile.quickOnly()){if(!same)plan(s,true);else{PlanResult r=new PlanResult();r.state=s;r.shot=last.shot;r.selected=last.selected;r.position=last.position;r.alternatives=last.alternatives;r.quick=true;final PlanResult d=r;post(()->{if(!plannerStopped)applyPlan(d);});}continue;}
+            boolean twoPass=RoutePlanner.proStyle&&com.bitaim.carromaim.cv.SpeedProfile.twoPass();
+            if(!(same&&last.quick)){
+                plan(s,twoPass);
+                if(!twoPass||pendingPlan.get()!=null||Thread.currentThread().isInterrupted())continue;
             }
+            plan(s,false);
         }
+    }
+    /** Duration of the last planner pass (shown next to the speed level). */
+    private volatile long lastPlanMs=-1;
+    private void plan(GameState s,boolean quick){
+        PlanResult result=new PlanResult();result.state=s;result.quick=quick;
+        RoutePlanner.QUICK.set(quick);long planT0=android.os.SystemClock.uptimeMillis();
+        try{
+            synchronized(shotTracker){
+                result.shot=shotTracker.update(s);
+                result.selected=shotTracker.selectedTarget();
+                result.position=shotTracker.routePosition();
+                result.alternatives=shotTracker.alternatives();
+            }
+            if(Thread.currentThread().isInterrupted())return;
+            // 4.13.1: the power meter's green zone (range of speeds that pot) for the shown route, manual play only
+            if(!autoPlayArmed&&result.shot!=null)try{com.bitaim.carromaim.cv.PowerMeter.computeWindow(s,result.shot);}catch(Throwable t){android.util.Log.w("BitAim/Plan","Power window: "+t);}
+            if(Thread.currentThread().isInterrupted())return;
+            Coin goldTarget=result.selected;
+            if(goldTarget==null&&result.shot!=null)goldTarget=result.shot.coin;
+            int signature=goldSceneLock.update(s,goldTarget);
+            lastPlanMs=android.os.SystemClock.uptimeMillis()-planT0;
+            lastPlanned=result;
+            final PlanResult done=result;final int sig=signature;final Coin target=goldTarget;final GameState frame=s;
+            post(() -> {
+                if(plannerStopped)return;
+                applyPlan(done);
+                if(sig!=goldSignature){goldSignature=sig;requestGold(frame,target,sig);}
+            });
+        }catch(Throwable t){
+            android.util.Log.w("BitAim/Plan","Planner failed: "+t);
+            ErrorHook hook=errorHook;if(hook!=null)hook.report("planner",t);
+            final PlanResult done=result;done.shot=null;
+            post(() -> {if(!plannerStopped)applyPlan(done);});
+        }finally{RoutePlanner.QUICK.set(false);}
     }
     /** UI thread: show a plan only if it belongs to the frame currently displayed. */
     private void applyPlan(PlanResult result){
@@ -599,6 +673,8 @@ public class AimOverlayView extends View {
         if(planListener!=null)planListener.onPlan(s,autoShot,autoGold,plan==null?s:plan.state);
         // Auto play: draw the route it will actually fire (user 00:30: "it shows one line but hits another"). That is
         // the shot being fired during the hold, else the ★ route once the striker stands on the ★.
+        // 4.12.0: speed level, frame rate and the last planning time, so speed settings can be compared live.
+        canvas.drawText("⚡ "+com.bitaim.carromaim.cv.SpeedProfile.SHORT[com.bitaim.carromaim.cv.SpeedProfile.level()]+" • "+com.bitaim.carromaim.cv.SpeedProfile.fps()+" fps"+(lastPlanMs>=0?" • plan "+lastPlanMs+" ms":""),24*dp,getHeight()-168*dp,smallTextPaint);
         ShotPlanner.Shot shown=autoShot;
         if(autoPlayArmed){
             ShotPlanner.Shot fire=firingRoute!=null?firingRoute:goldRoute;
@@ -624,8 +700,11 @@ public class AimOverlayView extends View {
             drawHint(canvas, prefix+(Float.isNaN(goldX) ? "No verified route — move striker or choose a coin" : "Slide striker to ★ for a verified route"));
             return;
         }
-        if(!provisional&&plan!=null)drawAlternatives(canvas,plan.alternatives,sr);
+        // 4.13.0: other coins' routes stay on screen while the striker slides (they no longer blink with re-planning).
+        List<ShotPlanner.Shot> alts=plan==null?new java.util.ArrayList<>():distinctAlternatives(plan.alternatives,shown);
+        drawAlternatives(canvas,alts,sr);
         aimAlignment.update(s,shown);
+        if(!autoPlayArmed)drawPowerMeter(canvas,s,shown);
         for(int i=0;i<shown.strikerPath.size()-1;i++){
             PointF a=shown.strikerPath.get(i),b=shown.strikerPath.get(i+1);
             canvas.drawLine(a.x,a.y,b.x,b.y,aimAlignment.aligned()?snapLinePaint:aimLinePaint);
@@ -672,17 +751,68 @@ public class AimOverlayView extends View {
         String power=shown.assumedLaunchSpeed>0&&shown.assumedLaunchSpeed<s.board.width()*1.6f?" • SOFT touch":shown.assumedLaunchSpeed>s.board.width()*2.2f?" • HARD":"";
         String odds=Float.isNaN(shown.chancePercent)?"Model "+modelScore+"%":"Chance ~"+Math.round(shown.chancePercent)+"%";
         canvas.drawText(RoutePlanner.label(shown)+position+" • "+odds+power,24*dp,getHeight()-130*dp,smallTextPaint);
-        int altCount=plan==null?0:Math.min(2,plan.alternatives.size());
+        int altCount=alts.size();
         String extra=s.queenRequired?"Manual queen shot • last own coin held":altCount>0&&!shown.productivePot&&s.targetColourKey==TargetColourLock.AUTO?"Faint lines: "+altCount+" other option"+(altCount>1?"s":"")+" • hold star: next route":shown.productivePot?"Pot + open: "+shown.otherCoinsMoved+" other coins • model":s.targetColourKey!=TargetColourLock.AUTO?TargetColourLock.label(s.targetColourKey)+" LOCK • hold star to change":"Hold star: colour lock / next route";
         canvas.drawText(extra,24*dp,getHeight()-110*dp,smallTextPaint);
     }
 
-    /** Up to two ranked alternatives, thin and faint, numbered 2 and 3 like map alternatives. */
+    // ── 4.13.0 power meter: shown only while the player pulls (the game's red power arrow is visible) ──
+    private float meterPull=Float.NaN;private long meterSeenMs;private long meterFrame=-1;
+    private Paint meterBack,meterFill,meterBand,meterTick,meterText;
+    private static final long METER_HOLD_MS=600;
+    private void drawPowerMeter(Canvas canvas,GameState s,ShotPlanner.Shot route){
+        long now=android.os.SystemClock.uptimeMillis();
+        if(s.frameId!=meterFrame){
+            meterFrame=s.frameId;
+            float pull=com.bitaim.carromaim.cv.PowerMeter.pullFromArrow(s.aimPower);
+            if(!Float.isNaN(pull)){meterPull=Float.isNaN(meterPull)||now-meterSeenMs>METER_HOLD_MS?pull:meterPull*.4f+pull*.6f;meterSeenMs=now;}
+        }
+        if(Float.isNaN(meterPull)||now-meterSeenMs>METER_HOLD_MS)return;
+        float w=s.board.width(),target=com.bitaim.carromaim.cv.PowerMeter.targetPull(route,w);
+        if(Float.isNaN(target))return;
+        if(meterBack==null){
+            meterBack=fill(0xAA000000);meterFill=fill(Color.WHITE);meterBand=fill(0x5522FF6E);
+            meterTick=stroke(Color.WHITE,2f);
+            meterText=new Paint(Paint.ANTI_ALIAS_FLAG);meterText.setTextSize(15*dp);meterText.setFakeBoldText(true);meterText.setShadowLayer(4*dp,0,0,Color.BLACK);
+        }
+        float[] win=com.bitaim.carromaim.cv.PowerMeter.window(route,w);
+        if(win!=null)target=(Math.min(win[0],com.bitaim.carromaim.cv.PowerMeter.FULL_PULL)+Math.min(win[1],com.bitaim.carromaim.cv.PowerMeter.FULL_PULL))/2;
+        int zone=win!=null?com.bitaim.carromaim.cv.PowerMeter.zone(meterPull,win):com.bitaim.carromaim.cv.PowerMeter.zone(meterPull,target);
+        int colour=zone==0?0xFF22FF6E:zone==1?0xFFFFA000:0xFFFF3D3D;
+        float left=s.board.left+12*dp,right=s.board.right-12*dp,top=s.board.bottom+26*dp,h=12*dp;
+        float full=com.bitaim.carromaim.cv.PowerMeter.FULL_PULL; // the bar is the game's power range: 0 to full
+        float xT=left+(right-left)*Math.min(1f,target/full),xP=left+(right-left)*Math.min(1f,meterPull/full);
+        float g=com.bitaim.carromaim.cv.PowerMeter.GREEN;
+        canvas.drawRoundRect(new RectF(left,top,right,top+h),h/2,h/2,meterBack);
+        float bandLo=win!=null&&win[1]-win[0]>=.012f?win[0]:target*(1-g),bandHi=win!=null&&win[1]-win[0]>=.012f?win[1]:target*(1+g);
+        canvas.drawRect(left+(right-left)*Math.min(1f,bandLo/full),top,left+(right-left)*Math.min(1f,bandHi/full),top+h,meterBand);
+        meterFill.setColor(colour);
+        canvas.drawRoundRect(new RectF(left,top+2*dp,Math.max(left+h,xP),top+h-2*dp),h/2,h/2,meterFill);
+        canvas.drawLine(xT,top-4*dp,xT,top+h+4*dp,meterTick);
+        meterText.setColor(colour);
+        int now100=Math.round(com.bitaim.carromaim.cv.PowerMeter.percent(meterPull)),need=Math.round(com.bitaim.carromaim.cv.PowerMeter.percent(target));
+        String needText=win!=null&&win[1]-win[0]>=.012f?Math.round(com.bitaim.carromaim.cv.PowerMeter.percent(win[0]))+"–"+Math.min(100,Math.round(com.bitaim.carromaim.cv.PowerMeter.percent(win[1])))+"%":need+"%";
+        String advice=win!=null?com.bitaim.carromaim.cv.PowerMeter.advice(meterPull,win):com.bitaim.carromaim.cv.PowerMeter.advice(meterPull,target);
+        canvas.drawText("POWER "+now100+"%  •  need "+needText+"  •  "+advice,left,top-6*dp,meterText);
+    }
+
+    /** 4.13.0 (user: "only one or two coins shown, I need more shots"): up to three ranked alternatives, one per
+     *  coin (never a second line to the main route's coin), thin and faint, numbered 2-4 with their chance. */
+    static final int MAX_ALTERNATIVES=3;
+    private static List<ShotPlanner.Shot> distinctAlternatives(List<ShotPlanner.Shot> alternatives,ShotPlanner.Shot main){
+        List<ShotPlanner.Shot> out=new java.util.ArrayList<>();
+        for(ShotPlanner.Shot alt:alternatives){
+            if(out.size()>=MAX_ALTERNATIVES)break;
+            if(alt.kind==4||alt.strikerPath.size()<2||alt.ghost==null||alt.coin==null)continue;
+            boolean taken=main!=null&&main.coin!=null&&dist(main.coin.pos.x,main.coin.pos.y,alt.coin.pos.x,alt.coin.pos.y)<alt.coin.radius;
+            for(ShotPlanner.Shot o:out)if(dist(o.coin.pos.x,o.coin.pos.y,alt.coin.pos.x,alt.coin.pos.y)<alt.coin.radius)taken=true;
+            if(!taken)out.add(alt);
+        }
+        return out;
+    }
     private void drawAlternatives(Canvas canvas,List<ShotPlanner.Shot> alternatives,float sr){
         int shown=0;
         for(ShotPlanner.Shot alt:alternatives){
-            if(shown>=2)break;
-            if(alt.kind==4||alt.strikerPath.size()<2)continue;
             for(int i=0;i<alt.strikerPath.size()-1;i++){
                 PointF a=alt.strikerPath.get(i),b=alt.strikerPath.get(i+1);
                 canvas.drawLine(a.x,a.y,b.x,b.y,altStrikerPaint);
@@ -694,7 +824,8 @@ public class AimOverlayView extends View {
             }
             if(alt.targetBounce!=null)canvas.drawLine(alt.targetBounce.x,alt.targetBounce.y,alt.pocket.x,alt.pocket.y,altCoinPaint);
             shown++;
-            canvas.drawText(String.valueOf(shown+1),alt.ghost.x+sr+3*dp,alt.ghost.y-sr,altTextPaint);
+            float chance=RoutePlanner.rankChance(alt);
+            canvas.drawText((shown+1)+(Float.isNaN(chance)?"":" • "+Math.round(chance)+"%"),alt.coin.pos.x+alt.coin.radius+3*dp,alt.coin.pos.y-alt.coin.radius,altTextPaint);
         }
     }
     /** Same disc layout regardless of the striker: used to keep lines during a slide. */

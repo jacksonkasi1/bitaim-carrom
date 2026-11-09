@@ -1,0 +1,8 @@
+13:41:44.591 status waiting for the board
+13:42:16.449 status waiting for your turn
+13:42:16.833 status waiting for the board
+13:42:41.007 status waiting for your turn
+13:42:43.880 status waiting for the board
+13:42:46.054 status waiting for your turn
+13:43:31.233 INCIDENT no-route {"coins":16,"own":6,"striker":[822,1573],"colourKey":1,"queenRequired":false}
+13:43:42.490 INCIDENT no-route {"coins":16,"own":6,"striker":[674,1573],"colourKey":1,"queenRequired":false}

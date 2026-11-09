@@ -26,7 +26,9 @@ public final class MatchFolder {
     /** Called for every analysed frame (state may be null when no board is visible). */
     public static synchronized void observe(int coins,boolean openingCluster,long now){
         if(coins<0){if(boardGoneAt<0)boardGoneAt=now;return;}
-        boolean back=boardGoneAt>=0&&now-boardGoneAt>60_000;boardGoneAt=-1;
+        // 4.11.0: a board missing for a minute starts a new folder only if it comes back as a fresh board (live 19:27-19:28:
+        // the chat keyboard hid the board for 63 s mid-game and split one match into two folders).
+        boolean back=boardGoneAt>=0&&now-boardGoneAt>60_000&&(openingCluster||coins>=17);if(coins>=0)boardGoneAt=-1;
         // 4.9.9b: the opening-cluster count flickers 15-19 during the first shots (a false second folder 1.5 min in);
         // a new match needs a real drop (<= 12 discs before) and a current match at least 90 s old.
         boolean fresh=openingCluster&&coins>=17&&lastCount>=0&&lastCount<=12&&now-startedAt>90_000;
