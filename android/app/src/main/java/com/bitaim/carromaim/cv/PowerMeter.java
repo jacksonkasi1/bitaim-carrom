@@ -10,14 +10,15 @@ package com.bitaim.carromaim.cv;
 public final class PowerMeter {
     private PowerMeter(){}
     /** Pull (board widths) = (arrow length - ARROW_OFFSET) / ARROW_PER_PULL; arrow length in board widths.
-     *  403 logged pulls: the arrow tops out at ~0.245 board widths where the pull reaches full power (0.25), and the
-     *  replayed launch speeds give ~7.3 x arrow against auto play's 8.5 x pull: arrow length ~= pull. Weakly
-     *  supported (per-shot spread +-0.8 board widths/s); the new "arrow" field in shot records refines it. */
-    public static volatile float ARROW_PER_PULL=1.0f, ARROW_OFFSET=0f;
+     *  4.14.2: measured on 128 auto shots in overnight practice (2026-11-10), where the pull is known exactly: arrow =
+     *  0.97 x pull (medians 0.972 / 0.974 / 0.967 at pulls 0.171 / 0.188 / 0.224; r=0.97). The arrow stops growing at
+     *  0.238 board widths (pulls 0.256-0.27 all read 0.233-0.240), i.e. full power is reached at a pull of 0.245.
+     *  (4.13.0 guessed 1.0 x pull, full at 0.245 / 0.25 from hand shots without known pulls.) */
+    public static volatile float ARROW_PER_PULL=.97f, ARROW_OFFSET=0f;
     /** Pull at the game's full power, board widths (percentages are of this). */
-    public static final float FULL_PULL=.25f;
+    public static final float FULL_PULL=.245f;
     /** The arrow stops growing here: any pull at or above it is full power. */
-    public static final float ARROW_FULL=.245f;
+    public static final float ARROW_FULL=.238f;
     public static final float GREEN=.08f, ORANGE=.18f;
     public static final int ZONE_GREEN=0, ZONE_ORANGE=1, ZONE_RED=2;
 

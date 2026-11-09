@@ -105,6 +105,8 @@ public class FloatingOverlayService extends Service {
     // (blink) or jumped to another coin (jump), and how long it was hidden after first showing. Logged at turn end.
     private int lineBlinks,lineJumps;private boolean lineWasShown;private long lineHiddenMs,lineHiddenSince=-1;private float lineCoinX=Float.NaN,lineCoinY;
     private void trackLineStability(com.bitaim.carromaim.cv.ShotPlanner.Shot route,long now){
+        // 4.14.3: only while aiming. After the shot the lines disappear on purpose (striker moving).
+        if(lastShotActionAt>=localTurnSince&&localTurnSince>=0){if(lineHiddenSince>=0){lineHiddenMs+=now-lineHiddenSince;lineHiddenSince=-1;}return;}
         boolean shown=route!=null&&route.coin!=null;
         if(shown){
             if(lineHiddenSince>=0){lineBlinks++;lineHiddenMs+=now-lineHiddenSince;lineHiddenSince=-1;}
