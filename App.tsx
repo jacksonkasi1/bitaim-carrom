@@ -211,7 +211,7 @@ export default function App() {
 
       <View style={styles.header}>
         <Text style={styles.logo}>Bit-Aim</Text>
-        <Text style={styles.subtitle}>Carrom Aim Assist • v4.14.3 • power meter, auto play, PC brain (optional)</Text>
+        <Text style={styles.subtitle}>Carrom Aim Assist • v4.14.4 • power meter, auto play, PC brain (optional)</Text>
       </View>
 
       <ScrollView style={styles.scroll}
@@ -368,7 +368,7 @@ export default function App() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Bit-Aim v4.14.3 • Chance ~% is a simulated estimate with hand aim error, power and pocket variation, not measured game odds. Power and spin are not calibrated.
+            Bit-Aim v4.14.4 • Chance ~% is a simulated estimate with hand aim error, power and pocket variation, not measured game odds. Power and spin are not calibrated.
           </Text>
         </View>
       </ScrollView>

@@ -156,6 +156,18 @@ public class AutoPlayRegression {
    ShotPlanner.Shot nr=RoutePlanner.best(g);check(nr!=null,"Fixture requires a second route");nr.chancePercent=90;
    AutoPlayController.Action second=null;for(int i=0;i<80&&second==null;i++){g.frameId++;second=bc.update(g,nr,Float.NaN,410000+i*100);}
    check(second!=null&&!second.move,"Extra turn after a pot is played ("+bc.status()+")");}
+  {// 4.14.4: break study fires a fixed, rotating full-power break at the cluster only while enabled
+   GameState g=RouteRegression.state(500,850);
+   for(int i=0;i<19;i++)RouteRegression.add(g,480+(i%5)*20,380+(i/5)*20,i%2==0);
+   g.openingCluster=true;
+   AutoPlayController off=new AutoPlayController();off.setEnabled(true);off.setGoldReady(true);
+   AutoPlayController.breakStudy=false;settle(off,g,null,Float.NaN,500000);check(!off.status().startsWith("break study"),"No study break unless enabled");
+   AutoPlayController.breakStudy=true;AutoPlayController.studyIndex=1;
+   AutoPlayController on=new AutoPlayController();on.setEnabled(true);on.setGoldReady(true);
+   AutoPlayController.Action b=settle(on,g,null,Float.NaN,600000);
+   check(b!=null&&!b.move&&on.status().startsWith("break study +2")&&AutoPlayController.studyIndex==2,"Study break fires variant 1 (+2 deg) and advances ("+on.status()+")");
+   float blen=(float)Math.hypot(b.x2-b.x1,b.y2-b.y1);check(Math.abs(blen-g.board.width()*.27f)<1f,"Study break uses full break pull");
+   AutoPlayController.breakStudy=false;AutoPlayController.studyIndex=0;}
   System.out.println("PASS: opt-in only, stable frames, pull geometry, one shot per turn, robustness gate, stale-plan rejection, slider verification, opponent-turn block, cancellation, stable gold scene, closed-loop aim correction");
  }
 }

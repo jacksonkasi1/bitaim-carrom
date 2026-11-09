@@ -120,6 +120,22 @@ public class FloatingOverlayService extends Service {
         appendEvent(String.format(java.util.Locale.US,"LINES turnMs=%d blinks=%d jumps=%d hiddenMs=%d auto=%b",now-localTurnSince,lineBlinks,lineJumps,hidden,autoPlay.enabled()));
         if(lineBlinks>=2||lineJumps>=3)reportIncident("line-blink",String.format(java.util.Locale.US,"{\"blinks\":%d,\"jumps\":%d,\"hiddenMs\":%d}",lineBlinks,lineJumps,hidden));
     }
+    // 4.14.4: break study marker <app files>/break-study.txt (created by the PC night script, holds the next variant)
+    private long studyCheckedAt=-1;
+    private void syncBreakStudy(){
+        long now=android.os.SystemClock.uptimeMillis();
+        try{
+            java.io.File f=new java.io.File(getExternalFilesDir(null),"break-study.txt");
+            if(AutoPlayController.studyFired){AutoPlayController.studyFired=false;
+                if(f.exists())try(java.io.FileWriter w=new java.io.FileWriter(f)){w.write(Integer.toString(AutoPlayController.studyIndex));}}
+            if(now-studyCheckedAt<3000)return;studyCheckedAt=now;
+            boolean on=f.exists();
+            if(on&&!AutoPlayController.breakStudy){
+                try(java.io.BufferedReader r=new java.io.BufferedReader(new java.io.FileReader(f))){String l=r.readLine();if(l!=null&&!l.trim().isEmpty())AutoPlayController.studyIndex=Integer.parseInt(l.trim());}catch(Exception ignored){}
+            }
+            AutoPlayController.breakStudy=on;
+        }catch(Throwable t){AutoPlayController.breakStudy=false;}
+    }
     private static int countOwn(GameState s){int n=0;for(Coin c:s.coins)if(c.targetEligible)n++;return n;}
     /** Called by the overlay when drawing or planning throws. */
     public void reportAppError(String where,Throwable t){
@@ -557,6 +573,7 @@ public class FloatingOverlayService extends Service {
             watchIncidents(state,route);
             autoPlay.setGoldReady(aimOverlayView.goldReady());
             autoPlay.setGoldRoute(aimOverlayView.goldRoute());
+            syncBreakStudy();
             AutoPlayController.Action action=autoPlay.update(state,route,gold,android.os.SystemClock.uptimeMillis(),planned);
             String status=autoPlay.status();
             if(autoPlay.enabled()&&!status.equals(lastAutoStatus)){lastAutoStatus=status;Log.i("BitAim/Auto","status: "+status);appendEvent("status "+status);}

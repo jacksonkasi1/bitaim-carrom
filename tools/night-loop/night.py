@@ -137,9 +137,12 @@ def main():
     last_pull = time.time(); unknown = 0; in_game_since = None; away = 0; match_start = time.time()
     import ctypes; ctypes.windll.kernel32.SetThreadExecutionState(0x80000001)   # keep the PC awake while this runs
     log('night supervisor start, stop at', STOP_AT)
+    STUDY = '/sdcard/Android/data/com.bitaim.carromaim/files/break-study.txt'
+    sh(f'[ -f {STUDY} ] || echo 0 > {STUDY}')                  # break study on (BitAim 4.14.4+), keeps its index
     while True:
         if datetime.datetime.now().strftime('%H%M') >= STOP_AT and datetime.datetime.now().hour < 12:
             log('stop time reached')
+            sh('rm -f /sdcard/Android/data/com.bitaim.carromaim/files/break-study.txt')   # back to normal openings
             if focus() in ('carrom', 'carrom-popup'): sh('input', 'keyevent', '3')   # HOME, leaves the game paused
             pull_logs(); return
         if time.time() - last_pull > 3600: pull_logs(); last_pull = time.time()

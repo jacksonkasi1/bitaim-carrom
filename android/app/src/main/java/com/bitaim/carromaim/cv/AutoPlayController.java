@@ -65,6 +65,9 @@ public final class AutoPlayController {
     private ShotPlanner.Shot lastShotRoute;
     /** Last slide {fromX, toX, sliderY} and last shot gesture {x1,y1,x2,y2}; NaN when none. */
     private float[][] shotCoins;
+    /** Break study (see update): set by the overlay while the marker file exists; index rotates per study break. */
+    public static volatile boolean breakStudy;public static volatile int studyIndex;public static volatile boolean studyFired;
+    static final float[] STUDY_OFFSETS_DEG={0,2,-2,4,-4,6,-6};private long lastStudyAt=-1_000_000;
     private float[] lastSlide={Float.NaN,Float.NaN,Float.NaN},lastGesture={Float.NaN,Float.NaN,Float.NaN,Float.NaN};
     public float[] lastSlide(){return lastSlide.clone();}
     public float[] lastGesture(){return lastGesture.clone();}
@@ -171,6 +174,24 @@ public final class AutoPlayController {
         // 4.9.1 (user 09:0x: "with autoplay it hits a weaker path; stop auto and within a second a stronger path appears;
         // the weak path has a blocker in the middle"): only fire a plan made on this settled board. A plan from a frame
         // where discs were still sliding can route through a disc that has since stopped in the way.
+        // 4.14.4 break study (overnight practice only: on while the night script's marker file exists on the phone).
+        // Planned openers potted 3 own / 6 opponent coins in 13 practice breaks, so each game now opens with one of a
+        // fixed set of full-power breaks at the cluster centre, rotated per game, from wherever the striker starts.
+        if(breakStudy&&s.openingCluster&&s.coins.size()>=18&&!moved&&now-lastStudyAt>60_000){
+            float cx=0,cy=0;for(Coin c:s.coins){cx+=c.pos.x;cy+=c.pos.y;}cx/=s.coins.size();cy/=s.coins.size();
+            float sx0=s.striker.pos.x,sy0=s.striker.pos.y,bx=cx-sx0,by=cy-sy0;
+            float off=STUDY_OFFSETS_DEG[Math.floorMod(studyIndex,STUDY_OFFSETS_DEG.length)];
+            double a0=Math.toRadians(off);float c0=(float)Math.cos(a0),s0=(float)Math.sin(a0);
+            float nx=bx*c0-by*s0,ny=bx*s0+by*c0,bl=(float)Math.hypot(nx,ny);
+            if(bl>.5f&&ny<0){
+                float distance=s.board.width()*BREAK_PULL;
+                lastStudyAt=now;studyIndex++;studyFired=true;
+                lastShotRoute=null;shotCoins=snapshot(s);lastGesture=new float[]{sx0,sy0,sx0-nx/bl*distance,sy0-ny/bl*distance};slideRoute=null;
+                busy=shotSent=true;lastAction=now;lastWasMove=false;stable=0;
+                status=String.format(java.util.Locale.US,"break study %+.0f° (variant %d)",off,Math.floorMod(studyIndex-1,STUDY_OFFSETS_DEG.length));
+                return new Action(false,sx0,sy0,sx0-nx/bl*distance,sy0-ny/bl*distance,HURRIED_AIM_BUDGET_MS);
+            }
+        }
         if(route!=null&&planned!=s&&!sameNearRoute(route,planned,s)){
             // 4.14.1 safety net: a plan that never matches the settled board must not cost the turn; after
             // BOARD_CHANGED_FALLBACK_MS it is dropped and the no-route fallback shot is played.
