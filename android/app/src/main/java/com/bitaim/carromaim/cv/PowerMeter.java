@@ -32,12 +32,62 @@ public final class PowerMeter {
         if(r.assumedLaunchSpeed>0)return r.assumedLaunchSpeed/(AutoPlayController.LAUNCH_PER_PULL*boardWidth);
         return AutoPlayController.pullFor(r,boardWidth);
     }
+    /** 4.13.1 (live 23:00:23, user: "it said small power for the wall shot, I followed and missed"): the target was the
+     *  softest speed that pots in the model (chosen so the striker does not follow the coin in), i.e. the weakest edge;
+     *  that wall shot asked for 68% and potted two coins at 96%. The meter now shows the whole range of speeds that pot
+     *  (wall shots also with a lossier rail, 0.74, the robustness test's low rail) and aims at its middle. Computed on
+     *  the planner thread for the shown route; about 15 model shots. */
+    public static void computeWindow(GameState s,ShotPlanner.Shot r){
+        if(s==null||r==null||r.kind>=4||r.strikerPath.size()<2||r.chain.isEmpty()||r.pocket==null||!Float.isNaN(r.potSpeedMin))return;
+        float w=s.board.width();
+        boolean wall=r.wall>=0||r.targetBounce!=null||r.railFirst;
+        float bestLo=Float.NaN,bestHi=Float.NaN,lo=Float.NaN;boolean containsChosen=false,bestContains=false;
+        float chosen=r.assumedLaunchSpeed>0?r.assumedLaunchSpeed/w:Float.NaN;
+        for(float v=1.2f;v<=2.61f;v+=.1f){
+            if(Thread.currentThread().isInterrupted())return;
+            float speed=v*w;
+            boolean ok=PhysicsVerifier.simulate(s,r,speed)&&(!wall||PhysicsVerifier.simulate(s,r,speed,0,.74))&&PhysicsVerifier.followSafe(s,r,speed);
+            if(ok){if(Float.isNaN(lo)){lo=v;containsChosen=false;}if(!Float.isNaN(chosen)&&Math.abs(v-chosen)<.06f)containsChosen=true;}
+            boolean end=!ok||v+.1f>2.61f;
+            if(end&&!Float.isNaN(lo)){
+                float hi=ok?v:v-.1f;
+                boolean better=Float.isNaN(bestLo)||containsChosen&&!bestContains||containsChosen==bestContains&&hi-lo>bestHi-bestLo;
+                if(better){bestLo=lo;bestHi=hi;bestContains=containsChosen;}
+                lo=Float.NaN;
+            }
+        }
+        if(Float.isNaN(bestLo)){r.potSpeedMin=r.potSpeedMax=-1;return;} // computed, no window (keep the single target)
+        r.potSpeedMin=bestLo*w;r.potSpeedMax=bestHi*w;
+    }
+    /** Pull range [low, high] (board widths) of the green zone, or null when the route has no speed window. */
+    public static float[] window(ShotPlanner.Shot r,float boardWidth){
+        if(r==null||Float.isNaN(r.potSpeedMin)||r.potSpeedMin<=0||boardWidth<=0)return null;
+        float k=AutoPlayController.LAUNCH_PER_PULL*boardWidth;
+        return new float[]{r.potSpeedMin/k,r.potSpeedMax/k};
+    }
+    /** Zone against a speed window: green inside it (a 3% margin from its edges), orange up to 12% outside. */
+    public static int zone(float pull,float[] win){
+        if(Float.isNaN(pull)||win==null)return ZONE_RED;
+        float lo=Math.min(win[0],FULL_PULL),hi=Math.min(win[1],FULL_PULL);
+        if(win[1]>=FULL_PULL*.98f&&pull>=FULL_PULL*.98f&&pull>=lo)return ZONE_GREEN;
+        if(hi-lo<.012f)return zone(pull,(lo+hi)/2); // a one-step window: the usual +-8% around it
+        float span=hi-lo;
+        if(pull>=lo+span*.03f&&pull<=hi-span*.03f)return ZONE_GREEN;
+        float out=pull<lo?(lo-pull)/lo:(pull-hi)/hi;
+        return out<=.12f?ZONE_ORANGE:ZONE_RED;
+    }
     public static int zone(float pull,float target){
         if(Float.isNaN(pull)||Float.isNaN(target)||target<=0)return ZONE_RED;
         // the game cannot go past full power: a route verified at or above it is matched by any full pull
         if(target>=FULL_PULL*.98f&&pull>=FULL_PULL*.98f)return ZONE_GREEN;
         float e=Math.abs(pull-Math.min(target,FULL_PULL))/Math.min(target,FULL_PULL);
         return e<=GREEN?ZONE_GREEN:e<=ORANGE?ZONE_ORANGE:ZONE_RED;
+    }
+    public static String advice(float pull,float[] win){
+        int z=zone(pull,win);
+        if(z==ZONE_GREEN)return "HOLD — release now";
+        float mid=(Math.min(win[0],FULL_PULL)+Math.min(win[1],FULL_PULL))/2;
+        return pull<mid?(z==ZONE_ORANGE?"a bit more":"pull MORE"):(z==ZONE_ORANGE?"a bit less":"pull LESS");
     }
     public static float percent(float pull){return pull/FULL_PULL*100f;}
     /** "more" / "less" / "hold" hint for the player. */

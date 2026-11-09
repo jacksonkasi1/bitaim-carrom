@@ -32,4 +32,13 @@ public class PowerMeterRegression{static void check(boolean v,String m){if(!v)th
   check(PowerMeter.advice(.15f,target).contains("MORE")&&PowerMeter.advice(.25f,target).contains("LESS")&&PowerMeter.advice(.2f,target).startsWith("HOLD"),"advice direction");
   ShotPlanner.Shot r=new ShotPlanner.Shot();r.kind=0;r.assumedLaunchSpeed=AutoPlayController.LAUNCH_PER_PULL*.2f*600;
   check(Math.abs(PowerMeter.targetPull(r,600)-.2f)<1e-4,"target pull from the verified launch speed");
+  // 4.13.1: a speed window (live 23:00:23 wall shot: "need 68%" was the softest edge; 96% potted two coins)
+  ShotPlanner.Shot wall=new ShotPlanner.Shot();float k=AutoPlayController.LAUNCH_PER_PULL*600;
+  wall.potSpeedMin=k*.14f;wall.potSpeedMax=k*.30f;float[] win=PowerMeter.window(wall,600);
+  check(PowerMeter.zone(.24f,win)==PowerMeter.ZONE_GREEN,"96% inside a 56-120% window is green");
+  check(PowerMeter.zone(.25f,win)==PowerMeter.ZONE_GREEN,"full power is green when the window reaches past full");
+  check(PowerMeter.zone(.13f,win)==PowerMeter.ZONE_ORANGE&&PowerMeter.zone(.10f,win)==PowerMeter.ZONE_RED,"below the window: orange, then red");
+  check(PowerMeter.advice(.10f,win).contains("MORE"),"below the window asks for more");
+  wall.potSpeedMin=k*.20f;wall.potSpeedMax=k*.20f;check(PowerMeter.zone(.205f,PowerMeter.window(wall,600))==PowerMeter.ZONE_GREEN,"a one-step window keeps the +-8% rule");
+  System.out.println("PASS: speed window: whole potting range is green, edges orange, one-step window +-8%");
   System.out.println("PASS: power arrow measured at 60 (yellow) / 110 / 170 px (orange-red) under BitAim's cyan line (painted circle and off-line red disc ignored), meter zones green/orange/red, full-power cap and advice");}}

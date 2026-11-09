@@ -579,6 +579,9 @@ public class AimOverlayView extends View {
                 result.alternatives=shotTracker.alternatives();
             }
             if(Thread.currentThread().isInterrupted())return;
+            // 4.13.1: the power meter's green zone (range of speeds that pot) for the shown route, manual play only
+            if(!autoPlayArmed&&result.shot!=null)try{com.bitaim.carromaim.cv.PowerMeter.computeWindow(s,result.shot);}catch(Throwable t){android.util.Log.w("BitAim/Plan","Power window: "+t);}
+            if(Thread.currentThread().isInterrupted())return;
             Coin goldTarget=result.selected;
             if(goldTarget==null&&result.shot!=null)goldTarget=result.shot.coin;
             int signature=goldSceneLock.update(s,goldTarget);
@@ -770,20 +773,25 @@ public class AimOverlayView extends View {
             meterTick=stroke(Color.WHITE,2f);
             meterText=new Paint(Paint.ANTI_ALIAS_FLAG);meterText.setTextSize(15*dp);meterText.setFakeBoldText(true);meterText.setShadowLayer(4*dp,0,0,Color.BLACK);
         }
-        int zone=com.bitaim.carromaim.cv.PowerMeter.zone(meterPull,target);
+        float[] win=com.bitaim.carromaim.cv.PowerMeter.window(route,w);
+        if(win!=null)target=(Math.min(win[0],com.bitaim.carromaim.cv.PowerMeter.FULL_PULL)+Math.min(win[1],com.bitaim.carromaim.cv.PowerMeter.FULL_PULL))/2;
+        int zone=win!=null?com.bitaim.carromaim.cv.PowerMeter.zone(meterPull,win):com.bitaim.carromaim.cv.PowerMeter.zone(meterPull,target);
         int colour=zone==0?0xFF22FF6E:zone==1?0xFFFFA000:0xFFFF3D3D;
         float left=s.board.left+12*dp,right=s.board.right-12*dp,top=s.board.bottom+26*dp,h=12*dp;
         float full=com.bitaim.carromaim.cv.PowerMeter.FULL_PULL; // the bar is the game's power range: 0 to full
         float xT=left+(right-left)*Math.min(1f,target/full),xP=left+(right-left)*Math.min(1f,meterPull/full);
         float g=com.bitaim.carromaim.cv.PowerMeter.GREEN;
         canvas.drawRoundRect(new RectF(left,top,right,top+h),h/2,h/2,meterBack);
-        canvas.drawRect(left+(right-left)*Math.min(1f,target*(1-g)/full),top,left+(right-left)*Math.min(1f,target*(1+g)/full),top+h,meterBand);
+        float bandLo=win!=null&&win[1]-win[0]>=.012f?win[0]:target*(1-g),bandHi=win!=null&&win[1]-win[0]>=.012f?win[1]:target*(1+g);
+        canvas.drawRect(left+(right-left)*Math.min(1f,bandLo/full),top,left+(right-left)*Math.min(1f,bandHi/full),top+h,meterBand);
         meterFill.setColor(colour);
         canvas.drawRoundRect(new RectF(left,top+2*dp,Math.max(left+h,xP),top+h-2*dp),h/2,h/2,meterFill);
         canvas.drawLine(xT,top-4*dp,xT,top+h+4*dp,meterTick);
         meterText.setColor(colour);
         int now100=Math.round(com.bitaim.carromaim.cv.PowerMeter.percent(meterPull)),need=Math.round(com.bitaim.carromaim.cv.PowerMeter.percent(target));
-        canvas.drawText("POWER "+now100+"%  •  need "+need+"%  •  "+com.bitaim.carromaim.cv.PowerMeter.advice(meterPull,target),left,top-6*dp,meterText);
+        String needText=win!=null&&win[1]-win[0]>=.012f?Math.round(com.bitaim.carromaim.cv.PowerMeter.percent(win[0]))+"–"+Math.min(100,Math.round(com.bitaim.carromaim.cv.PowerMeter.percent(win[1])))+"%":need+"%";
+        String advice=win!=null?com.bitaim.carromaim.cv.PowerMeter.advice(meterPull,win):com.bitaim.carromaim.cv.PowerMeter.advice(meterPull,target);
+        canvas.drawText("POWER "+now100+"%  •  need "+needText+"  •  "+advice,left,top-6*dp,meterText);
     }
 
     /** 4.13.0 (user: "only one or two coins shown, I need more shots"): up to three ranked alternatives, one per

@@ -63,6 +63,9 @@ public class ShotPlanner {
         public boolean sweep;
         /** Sweep shot whose striker bounces off a rail before the first disc (risky: rail model). */
         public boolean railFirst;
+        /** 4.13.1: launch speeds (px/s) between which the shot pots in the model (also with a lossier rail for wall
+         *  shots) and the striker stays out of the pocket; NaN until computed. The power meter's green zone. */
+        public float potSpeedMin=Float.NaN,potSpeedMax=Float.NaN;
         /** Ranking value: geometric score plus a bonus for aim tolerance (1 degree is worth 30 points, capped at 4). */
         public float quality(){return score+(Float.isNaN(aimMarginDegrees)?0:Math.min(4f,aimMarginDegrees)*30f);}
     }
