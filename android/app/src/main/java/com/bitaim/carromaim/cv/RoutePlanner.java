@@ -49,7 +49,7 @@ public final class RoutePlanner {
     public static final ThreadLocal<Boolean> QUICK=new ThreadLocal<Boolean>(){@Override protected Boolean initialValue(){return false;}};
     public static List<ShotPlanner.Shot> routes(GameState s,Coin selected){
         boolean quick=QUICK.get();
-        List<ShotPlanner.Shot> pool=candidates(s,selected),out=new ArrayList<>();
+        List<ShotPlanner.Shot> pool=spreadOverCoins(candidates(s,selected)),out=new ArrayList<>();
         int[] tried=new int[8],kept=new int[8];
         for(ShotPlanner.Shot route:pool){
             int kind=complexity(route);
@@ -80,9 +80,33 @@ public final class RoutePlanner {
             route.chancePercent=PhysicsVerifier.chance(s,route,CHANCE_SAMPLES);markTouching(s,route);estimated++;
         }
         Collections.sort(out,RoutePlanner::compare);
-        List<ShotPlanner.Shot> retained=new ArrayList<>();Arrays.fill(kept,0);
-        for(ShotPlanner.Shot route:out){int kind=complexity(route);if(kept[kind]++<(kind>=6?2:3))retained.add(route);}
+        List<ShotPlanner.Shot> retained=new ArrayList<>();Arrays.fill(kept,0);int[] extra=new int[8];
+        for(ShotPlanner.Shot route:out){
+            int kind=complexity(route);
+            if(kept[kind]<(kind>=6?2:3)){kept[kind]++;retained.add(route);continue;}
+            // 4.13.0: up to two more routes of a kind when they aim at a coin no kept route aims at (more coins on screen)
+            if(kind<6&&extra[kind]<2&&route.coin!=null&&!hasCoin(retained,route.coin)){extra[kind]++;retained.add(route);}
+        }
         return retained;
+    }
+    private static boolean hasCoin(List<ShotPlanner.Shot> routes,Coin c){
+        for(ShotPlanner.Shot r:routes)if(r.coin!=null&&distance(r.coin.pos,c.pos)<c.radius*.75f)return true;
+        return false;
+    }
+    /** 4.13.0 (user: "one or two coins only although so many are there"): within each complexity, every coin's best
+     *  candidate is validated before any coin's second one, so the PER_KIND budget is not spent on one coin's pockets.
+     *  Same number of physics checks; the order inside a coin is unchanged. */
+    static List<ShotPlanner.Shot> spreadOverCoins(List<ShotPlanner.Shot> pool){
+        final java.util.IdentityHashMap<ShotPlanner.Shot,Integer> occurrence=new java.util.IdentityHashMap<>();
+        java.util.Map<String,Integer> seen=new java.util.HashMap<>();
+        for(ShotPlanner.Shot r:pool){
+            String key=complexity(r)+":"+(r.coin==null?"-":Math.round(r.coin.pos.x)+","+Math.round(r.coin.pos.y));
+            int n=seen.containsKey(key)?seen.get(key):0;seen.put(key,n+1);occurrence.put(r,n);
+        }
+        List<ShotPlanner.Shot> out=new ArrayList<>(pool);
+        // stable sort: complexity first (as before), then the coin's n-th option; ties keep the original score order
+        Collections.sort(out,(a,b)->{int o=Integer.compare(complexity(a),complexity(b));return o!=0?o:Integer.compare(occurrence.get(a),occurrence.get(b));});
+        return out;
     }
     /** Production ordering shared by live routes, route cycling and the gold search. */
     public static int compare(ShotPlanner.Shot a,ShotPlanner.Shot b){

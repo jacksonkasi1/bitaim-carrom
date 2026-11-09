@@ -13,6 +13,8 @@ public class GameState {
     /** Screen y of the power slider knob under the striker, or NaN when not found. */
     public float sliderY=Float.NaN;
     public int aimGuideDots;
+    /** 4.13.0: length of the game's red power arrow while the player pulls, in board widths; NaN when not seen. */
+    public float aimPower=Float.NaN;
     public Coin         striker; // may be null before detection
     public List<Coin>   coins   = new ArrayList<>();
     public List<PointF> pockets = new ArrayList<>();

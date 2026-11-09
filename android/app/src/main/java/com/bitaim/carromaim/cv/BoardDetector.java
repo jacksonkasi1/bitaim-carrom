@@ -102,7 +102,7 @@ public class BoardDetector {
             try { lucky = LuckyShot.detect(hsv, gray, scale); } catch (Throwable t) { lucky = null; }
             return null;
         }
-        float bw = b.width;
+        float bw = b.width;paintBoard = b;
         TeamMatcher teams = new TeamMatcher(hsv);
         if(teams.freestyle)assignedTeams=null;
         else if(teams.known)assignedTeams=teams;
@@ -115,6 +115,7 @@ public class BoardDetector {
         Imgproc.HoughCircles(gray, circles, Imgproc.HOUGH_GRADIENT, 1.2,
                 bw * 0.03, 90, param2, minR, maxR);
 
+        paintHue = findPaintHue(circles, b);
         List<float[]> pockets = findPocketCenters(b); // x, y
         List<float[]> coins   = new ArrayList<>();   // x, y, r, color
         float[] striker = null; float strikerScore = -1;
@@ -211,7 +212,7 @@ public class BoardDetector {
                     && cx > b.x + bw * 0.15f && cx < b.x + bw * 0.85f) {
                 float score = r - Math.abs(cy - baseY) * 0.3f + (h > 85 && h < 135 ? bw * 0.02f : 0);
                 if (score > strikerScore) {
-                    if (striker != null && striker[2] <= bw * 0.042f) coins.add(new float[]{striker[0], striker[1], striker[2], striker[3]});
+                    if (striker != null && striker[2] <= bw * 0.042f && !flatPaintAt(striker[0], striker[1], striker[2])) coins.add(new float[]{striker[0], striker[1], striker[2], striker[3]});
                     strikerScore = score; striker = new float[]{cx, cy, r, colorOf(h, s, v)};
                 } else if (r <= bw * 0.042f && fullyInside && !flatRed(cx, cy, r, h, s)) {
                     coins.add(new float[]{cx, cy, r, colorOf(h, s, v)}); // a coin on the baseline
@@ -270,7 +271,8 @@ public class BoardDetector {
         if(striker!=null){float knob=findSliderKnob(gray,striker[0],striker[2],b.y+b.height,bw);if(!Float.isNaN(knob))st.sliderY=knob/scale;}
         if(striker!=null){
             float[] guide=AimGuideDetector.detect(hsv,striker[0],striker[1],bw,b.y);
-            if(guide!=null){st.aimGuideX=guide[0];st.aimGuideY=guide[1];st.aimGuideDots=(int)guide[2];}
+            if(guide!=null){st.aimGuideX=guide[0];st.aimGuideY=guide[1];st.aimGuideDots=(int)guide[2];
+                st.aimPower=AimGuideDetector.powerArrow(hsv,striker[0],striker[1],guide[0],guide[1],bw,striker[2]);}
         }
         st.teamKnown = targetColourKey!=TargetColourLock.AUTO||effectiveAllColours||teams.known;
         st.targetColourKey=targetColourKey;
@@ -468,15 +470,49 @@ public class BoardDetector {
             {.14f, .79f}, {.86f, .79f}, {.21f, .855f}, {.79f, .855f}};
     /** 4.12.4 (live 12:14-12:17, blue-frame skin): the board's painted red circles were detected as queens. Paint is
      *  flat (inner spread of saturation ~3-5, brightness ~4-5); a real queen has rings and shine (26-31, 16-20). */
-    private boolean flatRed(float cx, float cy, float r, double h, double s) {
-        if (!((h <= 10 || h >= 170) && s >= 120)) return false;
-        int k = Math.max(2, Math.round(r * 0.6f));
+    /** Painted board circle, not a disc: a coloured spot with an almost flat inside. 4.12.4: the red circles of the
+     *  blue-frame skin (live 12:17). 4.13.0: any colour (live 22:41, green-circle skin: 7 green baseline-end circles,
+     *  value sd 4-6, were opponent discs and blocked every route; real discs measure 17+). White and black discs
+     *  (saturation under 60) are never paint. */
+    /** {@link #flatRed} for a candidate whose colour was not kept (a replaced striker candidate). */
+    /** Board rectangle (processing pixels) of the frame being detected, for the painted-spot check. */
+    private Rect paintBoard;
+    /** Hue of the skin's painted circles in this frame, or NaN: three or more flat, coloured circles of one hue on the
+     *  painted spots. A single flat disc that happens to lie on a spot (plain light-blue discs) never makes a paint hue. */
+    private double paintHue = Double.NaN;
+    private static double hueGap(double a, double b) { double d = Math.abs(a - b) % 180; return Math.min(d, 180 - d); }
+    private double findPaintHue(Mat circles, Rect b) {
+        List<Double> hues = new ArrayList<>();
+        for (int i = 0; i < circles.cols(); i++) {
+            double[] d = circles.get(0, i); if (d == null || d.length < 3) continue;
+            float cx = (float) d[0], cy = (float) d[1], r = (float) d[2];
+            if (!nearDecoration(cx, cy, b)) continue;
+            double[] c = meanHsv((int) cx, (int) cy, Math.max(2, (int) (r * 0.35f)));
+            if (c == null || c[1] < 60 || !flatCore(cx, cy, r)) continue;
+            hues.add(c[0]);
+        }
+        for (double h : hues) { int n = 0; for (double o : hues) if (hueGap(h, o) <= 8) n++; if (n >= 3) return h; }
+        return Double.NaN;
+    }
+    private boolean flatCore(float cx, float cy, float r) {
+        int k = Math.max(2, Math.round(Math.min(r, 17f) * 0.55f));
         int x0 = Math.max(0, (int) cx - k), y0 = Math.max(0, (int) cy - k), x1 = Math.min(hsv.cols(), (int) cx + k), y1 = Math.min(hsv.rows(), (int) cy + k);
         if (x1 - x0 < 3 || y1 - y0 < 3) return false;
         org.opencv.core.MatOfDouble mean = new org.opencv.core.MatOfDouble(), sd = new org.opencv.core.MatOfDouble();
         Core.meanStdDev(hsv.submat(y0, y1, x0, x1), mean, sd);
         double[] d = sd.toArray(); mean.release(); sd.release();
-        return d[2] < 11; // real queens 16-20; paint <= 9 even with a coin overlapping it (live 12:16, 413,782)
+        return d[2] < 11;
+    }
+    private boolean flatPaintAt(float cx, float cy, float r) {
+        double[] c = meanHsv((int) cx, (int) cy, Math.max(2, (int) (r * 0.35f)));
+        return c != null && flatRed(cx, cy, r, c[0], c[1]);
+    }
+    private boolean flatRed(float cx, float cy, float r, double h, double s) {
+        // red paint anywhere (4.12.4); other colours only on the board's painted circle spots (baseline ends): plain
+        // light-blue discs of the two-blues skin are as flat as paint (live 2026-11-08)
+        boolean red = (h <= 10 || h >= 170) && s >= 120;
+        if (!red && !(s >= 60 && !Double.isNaN(paintHue) && hueGap(h, paintHue) <= 8 && paintBoard != null && nearDecoration(cx, cy, paintBoard))) return false;
+        return flatCore(cx, cy, r); // real queens 16-20; paint <= 9 even with a coin overlapping it (live 12:16, 413,782)
     }
 
     private static boolean nearDecoration(float x, float y, Rect board) {

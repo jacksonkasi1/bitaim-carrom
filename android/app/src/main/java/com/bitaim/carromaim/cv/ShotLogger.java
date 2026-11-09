@@ -152,6 +152,7 @@ public final class ShotLogger {
         b.append(String.format(Locale.US,"{\"t\":%d,\"board\":[%.1f,%.1f,%.1f,%.1f],\"striker\":[%.1f,%.1f,%.1f],\"aim\":[%.4f,%.4f],\"dots\":%d,\"autoPull\":%s,\"autoAim\":%s,\"key\":%d,",
                 now,before.board.left,before.board.top,before.board.width(),before.board.height(),before.striker.pos.x,before.striker.pos.y,before.striker.radius,
                 AimGuideDetector.shotDirection(before.aimGuideX,before.aimGuideY)[0],AimGuideDetector.shotDirection(before.aimGuideX,before.aimGuideY)[1],before.aimGuideDots,Float.isNaN(autoPull)?"null":String.format(Locale.US,"%.4f",autoPull),Float.isNaN(autoUx)?"null":String.format(Locale.US,"[%.4f,%.4f]",autoUx,autoUy),before.targetColourKey));
+        if(!Float.isNaN(before.aimPower))b.append(String.format(Locale.US,"\"arrow\":%.4f,",before.aimPower)); // 4.13.0: red power arrow, board widths
         b.append("\"pockets\":[");for(int i=0;i<before.pockets.size();i++){if(i>0)b.append(',');b.append(String.format(Locale.US,"[%.1f,%.1f]",before.pockets.get(i).x,before.pockets.get(i).y));}b.append("],");
         b.append("\"before\":");discs(b,before);b.append(",\"after\":");discs(b,after);
         if(shotId!=null){
@@ -233,7 +234,7 @@ public final class ShotLogger {
     }
     static GameState copy(GameState s){
         GameState c=new GameState();
-        c.frameId=s.frameId;c.targetColourKey=s.targetColourKey;c.aimGuideX=s.aimGuideX;c.aimGuideY=s.aimGuideY;c.aimGuideDots=s.aimGuideDots;
+        c.frameId=s.frameId;c.targetColourKey=s.targetColourKey;c.aimGuideX=s.aimGuideX;c.aimGuideY=s.aimGuideY;c.aimGuideDots=s.aimGuideDots;c.aimPower=s.aimPower;
         c.board=new android.graphics.RectF(s.board.left,s.board.top,s.board.right,s.board.bottom);
         if(s.striker!=null)c.striker=new Coin(s.striker.pos.x,s.striker.pos.y,s.striker.radius,Coin.COLOR_STRIKER,true);
         c.strikerDetected=s.strikerDetected;c.teamKnown=s.teamKnown;c.freestyle=s.freestyle;c.queenRequired=s.queenRequired;c.sliderY=s.sliderY;

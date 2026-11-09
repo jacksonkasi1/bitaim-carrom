@@ -54,8 +54,23 @@ public final class ShotTracker {
         }
         if(automaticTarget!=null)automaticTarget=match(state,automaticTarget);
         ShotPlanner.Shot held=previous==null?null:RoutePlanner.refresh(state,previous);
-        if(previous!=null&&held==null){if(++lostFrames<3)return null;}
-        else lostFrames=0;
+        // 4.13.0 (user: "showing, hiding, showing again"): a held route that no longer fits (striker slid, a disc
+        // blinked) used to blank the lines for two passes before searching again. When the striker slid, search at once
+        // (a route drawn from the old spot would be wrong).
+        boolean lost=previous!=null&&held==null;
+        if(lost)lostFrames++;else lostFrames=0;
+        boolean slid=stillFrames==0; // the striker moved since the previous frame: the player is sliding it
+        // the striker standing on a disc is a misread or a slide in progress: no route from there
+        for(Coin c:state.coins)if(Math.hypot(c.pos.x-state.striker.pos.x,c.pos.y-state.striker.pos.y)<(c.radius+state.striker.radius)*.8f){
+            if(lost&&lostFrames>=3)previous=null;
+            return null;
+        }
+        if(lost&&!slid&&lostFrames<3){
+            // Striker still: a detection blip. An unsure target (colour misread) hides for two passes rather than
+            // jumping to another coin; a target still there and still ours keeps its line.
+            Coin target=match(state,previous.coin);
+            return target!=null&&!alwaysBest?previous:null; // auto play never gets a stale route
+        }
         if(held!=null && !alwaysBest && (manualTarget!=null || Math.hypot(state.striker.pos.x-anchorX,state.striker.pos.y-anchorY)<state.striker.radius*.5f)){
             previous=held;challengerFrames=0;return held;
         }
