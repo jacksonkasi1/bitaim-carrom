@@ -39,6 +39,9 @@ public final class LuckyAuto {
         }
         if(sc==null){status="";stillSince=-1;return null;}
         if(!sc.strikerFound){status="waiting for the striker";stillSince=-1;return null;}
+        // 4.12.2 (live 12:12): never pull from a spot inside the target or off the baseline (a misread striker).
+        if(Math.hypot(sc.striker.x-sc.target.x,sc.striker.y-sc.target.y)<sc.ringR||Math.abs(sc.striker.y-(sc.board.top+sc.board.height()*.845f))>sc.board.width()*.06f){
+            status="striker not on the baseline, waiting";stillSince=-1;return null;}
         if(Float.isNaN(lastX)||Math.abs(sc.striker.x-lastX)>sc.strikerR*.08f){lastX=sc.striker.x;stillSince=now;}
         if(planning||p==null){status=planning?"finding the best shot":"no shot found";return null;}
         if(Math.abs(p.strikerX-sc.striker.x)>sc.strikerR*.3f){status="re-planning for the striker spot";return null;}

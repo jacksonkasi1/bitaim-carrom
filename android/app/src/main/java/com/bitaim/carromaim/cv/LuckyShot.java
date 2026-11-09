@@ -44,9 +44,13 @@ public final class LuckyShot {
         }
         /** Same board and same striker spot (the plan is made from where the striker is). */
         public boolean same(Scene o){
-            if(o==null||o.blockers.size()!=blockers.size()||o.strikerFound!=strikerFound)return false;
+            if(!sameBoard(o)||o.strikerFound!=strikerFound)return false;
+            return !strikerFound||Math.abs(o.striker.x-striker.x)<=strikerR*.3f;
+        }
+        /** Same puck, target and blockers (striker ignored). */
+        public boolean sameBoard(Scene o){
+            if(o==null||o.blockers.size()!=blockers.size())return false;
             float tol=board.width()*.012f;
-            if(strikerFound&&Math.abs(o.striker.x-striker.x)>strikerR*.3f)return false;
             if(d(o.puck,puck)>tol||d(o.target,target)>tol||Math.abs(o.board.left-board.left)>tol*2||Math.abs(o.board.width()-board.width())>tol*2)return false;
             for(PointF p:blockers){boolean found=false;for(PointF q:o.blockers)if(d(p,q)<tol){found=true;break;}if(!found)return false;}
             return true;
@@ -72,7 +76,8 @@ public final class LuckyShot {
         public synchronized Plan offer(Scene s){
             if(s==null)return null;
             if(planned!=null&&planned.same(s))return plan;
-            if(worker!=null&&worker.isAlive()){if(pending!=null&&pending.same(s))return null;worker.interrupt();}
+            // 4.12.2: a striker missed for a frame or two (animated halo) must not cancel a search on the same board.
+            if(worker!=null&&worker.isAlive()){if(pending!=null&&(pending.same(s)||pending.sameBoard(s)&&(!s.strikerFound||!pending.strikerFound)))return null;worker.interrupt();}
             planned=null;plan=null;pending=s;
             final Scene job=s;
             worker=new Thread(()->{
@@ -149,11 +154,19 @@ public final class LuckyShot {
             int sy0=Math.max(0,(int)(s.baseY-w*.08f)),sy1=Math.min(H,(int)(s.baseY+w*.08f));
             int sx0=Math.max(0,(int)(b.x+w*.05f)),sx1=Math.min(W,(int)(b.x+w*.95f));
             Mat sc=new Mat();Imgproc.HoughCircles(gray.submat(sy0,sy1,sx0,sx1),sc,Imgproc.HOUGH_GRADIENT,1.2,w*.08,90,18,Math.round(w*.030f),Math.round(w*.058f));
+            // 4.12.2 (live 2026-11-09 12:12): the target's yellow centre lies in this strip when the target is near the
+            // baseline and was taken as the striker, so auto play pulled from the target and nothing happened. Nothing
+            // inside the target rings is the striker; of the rest, the disc closest to the baseline wins.
+            float bestOff=Float.MAX_VALUE;
             for(int i=0;i<sc.cols();i++){
                 double[] c=sc.get(0,i);float cx=(float)c[0]+sx0,cy=(float)c[1]+sy0;
+                PointF p=new PointF(cx,cy);
+                if(d(p,s.target)<s.ringR*1.05f)continue;
                 double[] hv=meanHsv(hsv,cx,cy,(float)c[2]*.55f);
-                if(wood(hv)||d(new PointF(cx,cy),s.puck)<s.puckR*1.5f)continue;
-                s.striker=new PointF(cx,cy);s.strikerR=Math.max(w*.03f,Math.min(w*.045f,(float)c[2]));s.strikerFound=true;s.baseY=cy;break;
+                if(wood(hv)||d(p,s.puck)<s.puckR*1.5f)continue;
+                if(hv[1]>100&&hv[0]>=13&&hv[0]<=37)continue; // yellow: puck or target centre, never the striker
+                float off=Math.abs(cy-(b.y+b.height*.845f));
+                if(off<bestOff){bestOff=off;s.striker=p;s.strikerR=Math.max(w*.03f,Math.min(w*.045f,(float)c[2]));s.strikerFound=true;s.baseY=cy;}
             }
             sc.release();
             if(s.strikerFound){float[] g=AimGuideDetector.detect(hsv,s.striker.x,s.striker.y,w,b.y);if(g!=null){s.guideX=g[0];s.guideY=g[1];s.guideDots=(int)g[2];}}
@@ -233,12 +246,9 @@ public final class LuckyShot {
     /** Plan from the striker where it is (auto play shoots this); when a clearly more forgiving spot exists along the
      *  baseline (if the striker can be moved), it is attached as {@link Plan#better}. Run off the UI thread. */
     public static Plan plan(Scene sc){
-        Plan here=sc.strikerFound?search(sc,sc.striker.x):null;
-        if(Thread.currentThread().isInterrupted())return null;
-        Plan any=search(sc,Float.NaN);
-        if(here==null)return any;
-        if(any!=null&&Math.abs(any.strikerX-here.strikerX)>sc.strikerR*.5f&&any.spread<here.spread*.7f-sc.board.width()*.01f)here.better=any;
-        return here;
+        // 4.12.2: Lucky Shot keeps the striker where the game puts it (same spot in every round seen), so only that spot
+        // is searched; the all-spots search doubled the phone's planning time. Without a striker, every spot is searched.
+        return sc.strikerFound?search(sc,sc.striker.x):search(sc,Float.NaN);
     }
     /** Search striker spots (or only {@code fixedX}), directions and power; a few thousand short simulations. */
     static Plan search(Scene sc,float fixedX){

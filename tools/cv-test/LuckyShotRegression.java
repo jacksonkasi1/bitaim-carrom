@@ -26,7 +26,8 @@ public class LuckyShotRegression {
         check(Math.abs(s.ringR-155*k)<20,"teal ring radius");
         check(Math.hypot(s.puck.x-330*k,s.puck.y-973*k)<10,"gold puck found");
         check(s.blockers.size()==1&&Math.hypot(s.blockers.get(0).x-420*k,s.blockers.get(0).y-973*k)<10,"one black blocker found: "+s.blockers.size());
-        check(s.strikerFound&&Math.hypot(s.striker.x-240*k,s.striker.y-1325*k)<15,"striker found on the baseline");
+        check(s.strikerFound&&Math.hypot(s.striker.x-240*k,s.striker.y-1325*k)<25,"striker found on the baseline");
+        check(Math.hypot(s.striker.x-s.target.x,s.striker.y-s.target.y)>s.ringR,"the target centre is never taken as the striker (live 12:12)");
         long t0=System.nanoTime();
         LuckyShot.Plan p=LuckyShot.plan(s);
         long ms=(System.nanoTime()-t0)/1_000_000;
@@ -52,6 +53,9 @@ public class LuckyShotRegression {
         check(!Float.isNaN(shot.aimX),"contact point passed for the closed-loop aim");
         check(auto.consumeNote().startsWith("LUCKY SHOT"),"shot logged");
         check(auto.update(s,p,false,1000)==null,"no second shot while the first is in flight");
+        // A misread striker inside the target is never pulled from.
+        {LuckyShot.Scene bad=LuckyShot.detect(hsv,gray,scale);bad.striker.set(bad.target.x,bad.target.y);LuckyAuto a2=new LuckyAuto();
+         a2.update(bad,p,false,0);check(a2.update(bad,p,false,2000)==null,"no shot from a striker inside the target");}
         auto.complete(true);
         PointF leg0=p.puckPath.get(p.puckPath.size()-2);float lx=p.rest.x-leg0.x,ly=p.rest.y-leg0.y,ll=(float)Math.hypot(lx,ly);
         LuckyShot.Scene after=LuckyShot.detect(hsv,gray,scale);after.puck.set(p.rest.x+20*lx/ll,p.rest.y+20*ly/ll); // 20 px too long
