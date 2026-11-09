@@ -503,6 +503,8 @@ public class AimOverlayView extends View {
         GameState state; ShotPlanner.Shot shot; Coin selected; String position=""; String label;
         /** 4.11.2: quick first pass (Pro style); the full pass follows on the same board. */
         boolean quick;
+        /** 4.14.5: when this plan was computed (uptime ms). */
+        long madeAt=android.os.SystemClock.uptimeMillis();
         List<ShotPlanner.Shot> alternatives=new java.util.ArrayList<>();
     }
     private GameState autoState;
@@ -542,6 +544,7 @@ public class AimOverlayView extends View {
         planStartedMs=android.os.SystemClock.uptimeMillis();
         planTask=planExecutor.submit(this::planLoop);
     }
+    private static final long EMPTY_REUSE_MS=1500;
     private void planLoop(){
         GameState s;
         while((s=pendingPlan.getAndSet(null))!=null&&!plannerStopped&&!Thread.currentThread().isInterrupted()){
@@ -549,7 +552,12 @@ public class AimOverlayView extends View {
             // 4.14.1: sameScene tolerates 2 changed discs anywhere; a route is reused only when the discs along its own
             // path are unchanged too (auto play's check). Otherwise auto play rejected the reused route as
             // "re-planning on the settled board" while the planner kept reusing it (practice 02:05-02:30, 4 stalls).
-            boolean same=last!=null&&sameScene(last.state,s)&&(last.shot==null||com.bitaim.carromaim.cv.AutoPlayController.sameNearRoute(last.shot,last.state,s));
+            // 4.14.5 (practice 04:05, "no route from here" for whole turns while the desktop planner found 8 routes on the
+            // same picture, "plan 0 ms" on screen): an empty plan, e.g. made while discs were still sliding, was reused
+            // for as long as the board stayed the same. Empty plans are now reused for at most EMPTY_REUSE_MS.
+            boolean same=last!=null&&sameScene(last.state,s)&&(last.shot!=null
+                    ?com.bitaim.carromaim.cv.AutoPlayController.sameNearRoute(last.shot,last.state,s)
+                    :android.os.SystemClock.uptimeMillis()-last.madeAt<EMPTY_REUSE_MS);
             if(same&&!last.quick){
                 // Unchanged board and striker: re-planning would only burn CPU and battery.
                 // 4.14.0: keep the frame the route was planned on. Tagging the reused route with the newest frame made
