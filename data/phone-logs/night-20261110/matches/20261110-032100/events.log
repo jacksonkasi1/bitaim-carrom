@@ -1,0 +1,350 @@
+03:21:13.885 LINES turnMs=13745 blinks=0 jumps=0 hiddenMs=1495 auto=false
+03:21:15.394 status waiting for a steady board (0/4)
+03:21:15.497 status waiting for a steady board (1/4)
+03:21:15.732 status waiting for a steady board (2/4)
+03:21:15.947 status waiting for a steady board (3/4)
+03:21:16.116 status break study +0° (variant 0)
+03:21:16.119 SHOT from (539,1573) to (540,1837) break study +0° (variant 0)
+03:21:18.156 AIM initial=-1.32° final=0.11° steps=1 dots=14 release=(534,1837)
+03:21:18.169 status shot sent, waiting for the board to settle
+03:21:18.499 LINES turnMs=4018 blinks=0 jumps=0 hiddenMs=0 auto=true
+03:21:18.505 status waiting for your turn
+03:21:41.369 status waiting for a steady board (0/4)
+03:21:41.548 status waiting for a steady board (1/4)
+03:21:41.764 status waiting for a steady board (2/4)
+03:21:41.961 status waiting for a steady board (3/4)
+03:21:42.162 status moving striker to ★
+03:21:42.165 SLIDE from (539,2110) to (790,2110) moving striker to ★
+03:21:43.290 status correcting striker spot (★)
+03:21:43.293 SLIDE_LANDED start=539.4 target=744.9 finger=250.6 landed=730.2 off=-14.7
+03:21:43.296 SLIDE from (730,2110) to (734,2110) correcting striker spot (★)
+03:21:44.353 status waiting for a steady board (0/2)
+03:21:44.357 SLIDE_LANDED start=730.2 target=744.9 finger=4.0 landed=757.9 off=12.9
+03:21:44.453 status waiting for a steady board (1/2)
+03:21:44.639 status shooting: Direct route
+03:21:44.642 SHOT from (758,1571) to (657,1704) shooting: Direct route
+03:21:46.628 AIM initial=1.52° final=1.52° steps=1 dots=13 release=(660,1707)
+03:21:46.644 status shot sent, waiting for the board to settle
+03:21:48.387 LINES turnMs=7024 blinks=0 jumps=0 hiddenMs=0 auto=true
+03:21:48.394 status waiting for your turn
+03:21:49.185 status waiting for a steady board (0/4)
+03:21:49.367 status waiting for a steady board (1/4)
+03:21:49.550 status waiting for a steady board (2/4)
+03:21:49.735 status waiting for a steady board (3/4)
+03:21:49.934 status moving striker to ★
+03:21:49.941 SLIDE from (534,2110) to (419,2110) moving striker to ★
+03:21:51.063 status correcting striker spot (★)
+03:21:51.066 SLIDE_LANDED start=534.0 target=439.8 finger=-114.9 landed=462.1 off=22.3
+03:21:51.068 SLIDE from (462,2110) to (455,2110) correcting striker spot (★)
+03:21:52.162 status waiting for a steady board (0/2)
+03:21:52.166 SLIDE_LANDED start=462.1 target=439.8 finger=-7.3 landed=436.7 off=-3.1
+03:21:52.342 status waiting for a steady board (1/2)
+03:21:52.489 status shooting: Open cluster — manual shot
+03:21:52.494 SHOT from (437,1573) to (404,1736) shooting: Open cluster — manual shot
+03:21:55.592 AIM initial=-2.70° final=0.16° steps=3 dots=10 release=(396,1734)
+03:21:55.610 status shot sent, waiting for the board to settle
+03:21:56.090 LINES turnMs=6907 blinks=1 jumps=0 hiddenMs=847 auto=true
+03:21:56.098 status waiting for your turn
+03:22:18.324 status waiting for a steady board (0/4)
+03:22:18.539 status waiting for a steady board (1/4)
+03:22:18.724 status waiting for a steady board (2/4)
+03:22:18.927 status waiting for a steady board (3/4)
+03:22:19.115 status moving striker to ★
+03:22:19.118 SLIDE from (539,2105) to (852,2105) moving striker to ★
+03:22:20.219 status moving striker
+03:22:20.470 status waiting for a steady board (0/2)
+03:22:20.473 SLIDE_LANDED start=539.4 target=795.8 finger=312.7 landed=805.8 off=10.0
+03:22:20.717 status waiting for a steady board (1/2)
+03:22:20.971 status shooting: Direct route
+03:22:20.974 SHOT from (817,1573) to (761,1730) shooting: Direct route
+03:22:23.006 AIM initial=-1.37° final=-0.03° steps=1 dots=16 release=(757,1728)
+03:22:23.022 status shot sent, waiting for the board to settle
+03:22:23.818 LINES turnMs=5495 blinks=1 jumps=0 hiddenMs=597 auto=true
+03:22:23.824 status waiting for your turn
+03:22:23.987 status shot sent, waiting for the board to settle
+03:22:24.751 status waiting for your turn
+03:22:25.367 status waiting for a steady board (0/4)
+03:22:25.547 status waiting for a steady board (1/4)
+03:22:25.680 status waiting for a steady board (2/4)
+03:22:25.884 status waiting for a steady board (3/4)
+03:22:26.064 status moving striker to ★
+03:22:26.067 SLIDE from (530,2110) to (234,2110) moving striker to ★
+03:22:27.144 status moving striker
+03:22:27.472 status waiting for a steady board (0/2)
+03:22:27.475 SLIDE_LANDED start=529.7 target=287.2 finger=-295.7 landed=283.8 off=-3.4
+03:22:27.689 status waiting for a steady board (1/2)
+03:22:27.859 status shooting: Pot + open paths +1 (model)
+03:22:27.862 SHOT from (271,1573) to (139,1788) shooting: Pot + open paths +1 (model)
+03:22:29.777 AIM initial=-1.75° final=0.06° steps=1 dots=10 release=(132,1784)
+03:22:29.798 status shot sent, waiting for the board to settle
+03:22:30.210 LINES turnMs=4846 blinks=2 jumps=3 hiddenMs=666 auto=true
+03:22:30.212 INCIDENT line-blink {"blinks":2,"jumps":3,"hiddenMs":666}
+03:22:30.220 status waiting for your turn
+03:22:53.275 status waiting for a steady board (0/4)
+03:22:53.440 status waiting for a steady board (1/4)
+03:22:53.590 status waiting for a steady board (2/4)
+03:22:53.757 status waiting for a steady board (3/4)
+03:22:53.923 status moving striker to ★
+03:22:53.927 SLIDE from (539,2108) to (577,2108) moving striker to ★
+03:22:55.070 status correcting striker spot (★)
+03:22:55.073 SLIDE_LANDED start=539.4 target=592.4 finger=38.0 landed=561.6 off=-30.8
+03:22:55.076 SLIDE from (562,2110) to (577,2110) correcting striker spot (★)
+03:22:56.230 status waiting for a steady board (0/2)
+03:22:56.234 SLIDE_LANDED start=561.6 target=592.4 finger=15.8 landed=580.2 off=-12.1
+03:22:56.429 status waiting for a steady board (1/2)
+03:22:56.595 status shooting: Pot via cascade (model)
+03:22:56.601 SHOT from (584,1573) to (644,1818) shooting: Pot via cascade (model)
+03:22:58.468 AIM initial=-1.82° final=0.19° steps=1 dots=14 release=(636,1820)
+03:22:58.487 status shot sent, waiting for the board to settle
+03:22:58.868 LINES turnMs=5595 blinks=0 jumps=1 hiddenMs=0 auto=true
+03:22:58.875 status waiting for your turn
+03:23:21.302 status waiting for a steady board (0/4)
+03:23:21.501 status waiting for a steady board (1/4)
+03:23:21.668 status waiting for a steady board (2/4)
+03:23:21.832 status waiting for a steady board (3/4)
+03:23:22.031 status re-planning on the settled board
+03:23:22.215 status moving striker to ★
+03:23:22.220 SLIDE from (538,2110) to (358,2110) moving striker to ★
+03:23:23.360 status correcting striker spot (★)
+03:23:23.363 SLIDE_LANDED start=538.3 target=390.5 finger=-180.3 landed=412.8 off=22.3
+03:23:23.366 SLIDE from (413,2110) to (405,2110) correcting striker spot (★)
+03:23:24.542 status waiting for a steady board (0/2)
+03:23:24.545 SLIDE_LANDED start=412.8 target=390.5 finger=-7.3 landed=377.4 off=-13.1
+03:23:24.725 status waiting for a steady board (1/2)
+03:23:25.204 status re-planning on the settled board
+03:23:25.353 status no route from here (2 s to relaxed mode)
+03:23:26.437 status no route from here (1 s to relaxed mode)
+03:23:27.345 status no route from here (0 s to relaxed mode)
+03:23:28.459 status no route from here
+03:23:29.221 INCIDENT no-route {"coins":16,"own":7,"striker":[376,1573],"colourKey":0,"queenRequired":false}
+03:23:30.390 status no route: medium shot at own discs
+03:23:30.392 SHOT from (376,1573) to (395,1757) no route: medium shot at own discs
+03:23:32.420 AIM initial=-0.73° final=0.19° steps=1 dots=13 release=(393,1757)
+03:23:32.441 status shot sent, waiting for the board to settle
+03:23:32.905 LINES turnMs=11606 blinks=1 jumps=4 hiddenMs=5869 auto=true
+03:23:32.911 INCIDENT line-blink {"blinks":1,"jumps":4,"hiddenMs":5869}
+03:23:32.923 status waiting for your turn
+03:23:33.156 status shot sent, waiting for the board to settle
+03:23:34.122 LINES turnMs=964 blinks=0 jumps=0 hiddenMs=815 auto=true
+03:23:34.127 status waiting for your turn
+03:23:55.172 status waiting for a steady board (0/4)
+03:23:55.343 status waiting for a steady board (1/4)
+03:23:55.493 status waiting for a steady board (2/4)
+03:23:55.704 status waiting for a steady board (3/4)
+03:23:55.853 status moving striker to ★
+03:23:55.858 SLIDE from (539,2105) to (233,2105) moving striker to ★
+03:23:56.965 status correcting striker spot (★)
+03:23:56.968 SLIDE_LANDED start=539.4 target=288.3 finger=-306.2 landed=323.4 off=35.1
+03:23:56.971 SLIDE from (323,2107) to (303,2107) correcting striker spot (★)
+03:23:58.111 status waiting for a steady board (0/2)
+03:23:58.115 SLIDE_LANDED start=323.4 target=288.3 finger=-20.1 landed=263.1 off=-25.2
+03:23:58.277 status waiting for a steady board (1/2)
+03:23:58.462 status shooting: Direct route
+03:23:58.466 SHOT from (263,1572) to (272,1739) shooting: Direct route
+03:24:00.579 AIM initial=-2.06° final=-2.06° steps=1 dots=15 release=(266,1739)
+03:24:00.603 status shot sent, waiting for the board to settle
+03:24:01.431 LINES turnMs=6260 blinks=1 jumps=0 hiddenMs=797 auto=true
+03:24:01.439 status waiting for your turn
+03:24:01.582 status shot sent, waiting for the board to settle
+03:24:02.279 status waiting for your turn
+03:24:02.975 status waiting for a steady board (0/4)
+03:24:03.142 status waiting for a steady board (1/4)
+03:24:03.291 status waiting for a steady board (2/4)
+03:24:03.442 status waiting for a steady board (3/4)
+03:24:03.660 status shooting: Pot + open paths +1 (model)
+03:24:03.665 SHOT from (538,1573) to (414,1795) shooting: Pot + open paths +1 (model)
+03:24:04.891 AIM initial=-0.11° final=-0.11° steps=0 dots=10 release=(414,1795)
+03:24:04.902 status shot sent, waiting for the board to settle
+03:24:05.265 LINES turnMs=2291 blinks=0 jumps=0 hiddenMs=0 auto=true
+03:24:05.270 status waiting for your turn
+03:24:28.235 status waiting for a steady board (0/4)
+03:24:28.412 status waiting for a steady board (1/4)
+03:24:28.562 status waiting for a steady board (2/4)
+03:24:28.712 status waiting for a steady board (3/4)
+03:24:28.881 status moving striker to ★
+03:24:28.886 SLIDE from (539,2105) to (358,2105) moving striker to ★
+03:24:30.008 status correcting striker spot (★)
+03:24:30.012 SLIDE_LANDED start=539.4 target=390.5 finger=-181.6 landed=410.4 off=20.0
+03:24:30.016 SLIDE from (410,2110) to (405,2110) correcting striker spot (★)
+03:24:31.155 status waiting for a steady board (0/2)
+03:24:31.159 SLIDE_LANDED start=410.4 target=390.5 finger=-5.0 landed=378.1 off=-12.4
+03:24:31.303 status waiting for a steady board (1/2)
+03:24:31.471 status shooting: Direct route
+03:24:31.477 SHOT from (378,1572) to (410,1737) shooting: Direct route
+03:24:34.564 AIM initial=-1.67° final=0.51° steps=3 dots=11 release=(404,1738)
+03:24:34.572 status shot sent, waiting for the board to settle
+03:24:35.500 LINES turnMs=7271 blinks=0 jumps=2 hiddenMs=822 auto=true
+03:24:35.505 status waiting for your turn
+03:24:35.818 status shot sent, waiting for the board to settle
+03:24:36.547 status waiting for your turn
+03:24:37.314 status waiting for a steady board (0/4)
+03:24:37.462 status waiting for a steady board (1/4)
+03:24:37.619 status waiting for a steady board (2/4)
+03:24:37.782 status waiting for a steady board (3/4)
+03:24:37.926 status no route from here (6 s to relaxed mode)
+03:24:38.425 status moving striker to ★
+03:24:38.430 SLIDE from (543,2110) to (508,2110) moving striker to ★
+03:24:39.586 status waiting for a steady board (0/2)
+03:24:39.589 SLIDE_LANDED start=543.3 target=492.7 finger=-35.7 landed=501.2 off=8.6
+03:24:39.758 status waiting for a steady board (1/2)
+03:24:39.903 status shooting: Direct route
+03:24:39.908 SHOT from (506,1573) to (340,1548) shooting: Direct route
+03:24:42.491 AIM initial=-0.53° final=0.15° steps=2 dots=15 release=(340,1548)
+03:24:42.508 status shot sent, waiting for the board to settle
+03:24:43.906 status extra turn: planning
+03:24:44.053 status waiting for a steady board (0/4)
+03:24:44.684 status waiting for a steady board (1/4)
+03:24:44.833 status waiting for a steady board (2/4)
+03:24:44.982 status waiting for a steady board (3/4)
+03:24:45.150 status no route from here (5 s to relaxed mode)
+03:24:46.013 status no route from here (4 s to relaxed mode)
+03:24:47.082 status no route from here (3 s to relaxed mode)
+03:24:47.773 status shooting: Direct route
+03:24:47.776 SHOT from (536,1571) to (327,1503) shooting: Direct route
+03:24:50.845 AIM initial=0.63° final=0.34° steps=3 dots=13 release=(327,1506)
+03:24:50.862 status shot sent, waiting for the board to settle
+03:24:51.296 LINES turnMs=13984 blinks=1 jumps=0 hiddenMs=1046 auto=true
+03:24:51.302 status waiting for your turn
+03:24:51.441 status shot sent, waiting for the board to settle
+03:24:52.387 LINES turnMs=947 blinks=0 jumps=2 hiddenMs=149 auto=true
+03:24:52.395 status waiting for your turn
+03:24:52.521 status shot sent, waiting for the board to settle
+03:24:53.401 status waiting for your turn
+03:25:14.643 status waiting for a steady board (0/4)
+03:25:14.790 status waiting for a steady board (1/4)
+03:25:14.935 status waiting for a steady board (2/4)
+03:25:15.105 status waiting for a steady board (3/4)
+03:25:15.252 status moving striker to ★
+03:25:15.256 SLIDE from (539,2110) to (233,2110) moving striker to ★
+03:25:16.330 status moving striker
+03:25:16.429 status correcting striker spot (★)
+03:25:16.437 SLIDE_LANDED start=539.4 target=288.3 finger=-306.2 landed=273.0 off=-15.3
+03:25:16.440 SLIDE from (273,2108) to (277,2108) correcting striker spot (★)
+03:25:17.545 status waiting for a steady board (0/2)
+03:25:17.548 SLIDE_LANDED start=273.0 target=288.3 finger=4.0 landed=265.2 off=-23.1
+03:25:17.559 status waiting for a steady board (1/2)
+03:25:17.693 status shooting: Pot + open paths +1 (model)
+03:25:17.698 SHOT from (265,1572) to (212,1821) shooting: Pot + open paths +1 (model)
+03:25:18.947 AIM initial=0.03° final=0.03° steps=0 dots=10 release=(212,1821)
+03:25:18.970 status shot sent, waiting for the board to settle
+03:25:19.234 LINES turnMs=4599 blinks=2 jumps=3 hiddenMs=928 auto=true
+03:25:19.237 INCIDENT line-blink {"blinks":2,"jumps":3,"hiddenMs":928}
+03:25:19.243 status waiting for your turn
+03:25:42.431 status waiting for a steady board (0/4)
+03:25:42.602 status waiting for a steady board (1/4)
+03:25:42.762 status waiting for a steady board (2/4)
+03:25:42.929 status waiting for a steady board (3/4)
+03:25:43.078 status moving striker to ★
+03:25:43.082 SLIDE from (539,2105) to (728,2105) moving striker to ★
+03:25:44.224 status waiting for a steady board (0/2)
+03:25:44.227 SLIDE_LANDED start=539.4 target=694.1 finger=188.6 landed=702.6 off=8.5
+03:25:44.407 status waiting for a steady board (1/2)
+03:25:44.574 status re-planning on the settled board
+03:25:44.722 status no route from here (4 s to relaxed mode)
+03:25:45.504 status no route from here (3 s to relaxed mode)
+03:25:46.550 status no route from here (2 s to relaxed mode)
+03:25:47.561 status no route from here (1 s to relaxed mode)
+03:25:48.562 status no route from here (0 s to relaxed mode)
+03:25:48.738 INCIDENT no-route {"coins":12,"own":4,"striker":[705,1573],"colourKey":0,"queenRequired":false}
+03:25:49.570 status no route from here
+03:25:51.600 status no route: medium shot at own discs
+03:25:51.602 SHOT from (705,1573) to (797,1732) no route: medium shot at own discs
+03:25:53.498 AIM initial=-0.89° final=-0.89° steps=1 dots=7 release=(797,1732)
+03:25:53.504 status shot sent, waiting for the board to settle
+03:25:53.837 LINES turnMs=11408 blinks=1 jumps=2 hiddenMs=7829 auto=true
+03:25:53.844 status waiting for your turn
+03:25:53.988 status shot sent, waiting for the board to settle
+03:25:55.280 LINES turnMs=1295 blinks=0 jumps=0 hiddenMs=996 auto=true
+03:25:55.289 status waiting for your turn
+03:25:56.448 status waiting for a steady board (0/4)
+03:25:56.614 status waiting for a steady board (1/4)
+03:25:56.783 status waiting for a steady board (2/4)
+03:25:56.961 status waiting for a steady board (3/4)
+03:25:57.109 status shooting: Pot via cascade (model)
+03:25:57.113 SHOT from (539,1573) to (772,1673) shooting: Pot via cascade (model)
+03:25:59.181 AIM initial=-0.56° final=0.10° steps=1 dots=7 release=(771,1675)
+03:25:59.200 status shot sent, waiting for the board to settle
+03:25:59.646 LINES turnMs=3204 blinks=0 jumps=0 hiddenMs=0 auto=true
+03:25:59.651 status waiting for your turn
+03:25:59.996 status shot sent, waiting for the board to settle
+03:26:00.179 status waiting for your turn
+03:26:02.113 status waiting for a steady board (0/4)
+03:26:02.289 status waiting for a steady board (1/4)
+03:26:02.438 status waiting for a steady board (2/4)
+03:26:02.588 status waiting for a steady board (3/4)
+03:26:02.724 status moving striker to ★
+03:26:02.727 SLIDE from (534,2102) to (530,2102) moving striker to ★
+03:26:03.767 status waiting for a steady board (0/2)
+03:26:03.771 SLIDE_LANDED start=534.0 target=526.7 finger=-4.0 landed=537.2 off=10.5
+03:26:03.901 status waiting for a steady board (1/2)
+03:26:04.066 status no route from here (5 s to relaxed mode)
+03:26:04.202 status no route from here (4 s to relaxed mode)
+03:26:04.516 status shooting: Open paths +1 (model)
+03:26:04.519 SHOT from (541,1571) to (408,1787) shooting: Open paths +1 (model)
+03:26:06.433 AIM initial=-1.25° final=0.11° steps=1 dots=6 release=(403,1784)
+03:26:06.455 status shot sent, waiting for the board to settle
+03:26:06.836 LINES turnMs=4725 blinks=1 jumps=0 hiddenMs=1962 auto=true
+03:26:06.842 status waiting for your turn
+03:26:29.919 status waiting for a steady board (0/4)
+03:26:30.065 status waiting for a steady board (1/4)
+03:26:30.236 status waiting for a steady board (2/4)
+03:26:30.384 status waiting for a steady board (3/4)
+03:26:30.532 status no route from here (6 s to relaxed mode)
+03:26:30.967 status no route from here (5 s to relaxed mode)
+03:26:31.959 status no route from here (4 s to relaxed mode)
+03:26:32.989 status no route from here (3 s to relaxed mode)
+03:26:34.018 status no route from here (2 s to relaxed mode)
+03:26:34.317 INCIDENT no-route {"coins":10,"own":2,"striker":[539,1571],"colourKey":0,"queenRequired":false}
+03:26:34.963 status no route from here (1 s to relaxed mode)
+03:26:36.012 status no route from here (0 s to relaxed mode)
+03:26:36.976 status no route from here
+03:26:38.960 status no route: medium shot at own discs
+03:26:38.964 SHOT from (539,1571) to (607,1781) no route: medium shot at own discs
+03:26:40.757 AIM initial=-1.14° final=-0.13° steps=1 dots=16 release=(603,1782)
+03:26:40.776 status shot sent, waiting for the board to settle
+03:26:41.720 LINES turnMs=11803 blinks=0 jumps=0 hiddenMs=8742 auto=true
+03:26:41.727 status waiting for your turn
+03:26:41.855 status shot sent, waiting for the board to settle
+03:26:42.419 status waiting for your turn
+03:26:43.797 status waiting for a steady board (0/4)
+03:26:44.097 status waiting for a steady board (1/4)
+03:26:44.248 status waiting for a steady board (2/4)
+03:26:44.411 status waiting for a steady board (3/4)
+03:26:44.563 status shooting: Safe break — spread the cluster
+03:26:44.568 SHOT from (538,1570) to (776,1661) shooting: Safe break — spread the cluster
+03:26:47.629 AIM initial=-0.38° final=0.54° steps=3 dots=13 release=(774,1666)
+03:26:47.650 status shot sent, waiting for the board to settle
+03:26:48.062 LINES turnMs=4267 blinks=0 jumps=0 hiddenMs=0 auto=true
+03:26:48.067 status waiting for your turn
+03:26:48.213 status shot sent, waiting for the board to settle
+03:26:48.528 LINES turnMs=316 blinks=0 jumps=0 hiddenMs=0 auto=true
+03:26:48.536 status waiting for your turn
+03:27:10.828 status waiting for a steady board (0/4)
+03:27:10.993 status waiting for a steady board (1/4)
+03:27:11.159 status waiting for a steady board (2/4)
+03:27:11.325 status waiting for a steady board (3/4)
+03:27:11.475 status moving striker to ★
+03:27:11.479 SLIDE from (539,2105) to (728,2105) moving striker to ★
+03:27:12.538 status correcting striker spot (★)
+03:27:12.542 SLIDE_LANDED start=539.4 target=694.1 finger=188.6 landed=670.3 off=-23.7
+03:27:12.545 SLIDE from (670,2108) to (679,2108) correcting striker spot (★)
+03:27:13.618 status waiting for a steady board (0/2)
+03:27:13.621 SLIDE_LANDED start=670.3 target=694.1 finger=8.7 landed=704.7 off=10.7
+03:27:13.783 status waiting for a steady board (1/2)
+03:27:13.936 status wall shot: waiting for a better route (3 s to relaxed mode)
+03:27:14.896 status wall shot: waiting for a better route (2 s to relaxed mode)
+03:27:15.029 status re-planning on the settled board
+03:27:15.178 status no route from here (2 s to relaxed mode)
+03:27:15.908 status no route from here (1 s to relaxed mode)
+03:27:16.889 status no route from here (0 s to relaxed mode)
+03:27:17.919 status shooting (time running out): Cushion route
+03:27:17.924 SHOT from (705,1571) to (624,1717) shooting (time running out): Cushion route
+03:27:19.046 INCIDENT no-route {"coins":9,"own":1,"striker":[705,1571],"colourKey":0,"queenRequired":false}
+03:27:20.313 AIM initial=-0.68° final=0.14° steps=2 dots=16 release=(623,1717)
+03:27:20.327 status shot sent, waiting for the board to settle
+03:27:22.101 LINES turnMs=11275 blinks=1 jumps=0 hiddenMs=3596 auto=true
+03:27:22.108 status waiting for your turn
+03:27:22.383 status waiting for the board
+03:27:24.010 status waiting for a steady board (0/4)
+03:27:24.148 status waiting for a steady board (1/4)
+03:27:25.972 status waiting for the board

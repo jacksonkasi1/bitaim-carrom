@@ -1,0 +1,64 @@
+01:04:25.822 status waiting for a steady board (0/4)
+01:04:25.966 status waiting for a steady board (1/4)
+01:04:26.198 status waiting for a steady board (2/4)
+01:04:26.414 status waiting for a steady board (3/4)
+01:04:26.596 status board changed, re-planning (6 s to relaxed mode)
+01:04:26.947 status board changed, re-planning (5 s to relaxed mode)
+01:04:27.975 status board changed, re-planning (4 s to relaxed mode)
+01:04:28.822 status board changed, re-planning (3 s to relaxed mode)
+01:04:29.870 status board changed, re-planning (2 s to relaxed mode)
+01:04:30.886 status board changed, re-planning (1 s to relaxed mode)
+01:04:31.912 status board changed, re-planning (0 s to relaxed mode)
+01:04:32.425 INCIDENT auto-stall {"status":"board changed, re-planning (0 s to relaxed mode)","turnMs":10062}
+01:04:32.840 status board changed, re-planning
+01:04:41.491 status re-planning on the settled board
+01:04:42.292 status waiting for your turn
+01:05:02.566 status waiting for a steady board (0/4)
+01:05:02.742 status waiting for a steady board (1/4)
+01:05:02.963 status waiting for a steady board (2/4)
+01:05:03.158 status waiting for a steady board (3/4)
+01:05:03.324 status board changed, re-planning (6 s to relaxed mode)
+01:05:03.677 status board changed, re-planning (5 s to relaxed mode)
+01:05:04.204 status shooting: Pot via cascade (model)
+01:05:04.209 SHOT from (538,1571) to (646,1800) shooting: Pot via cascade (model)
+01:05:06.210 AIM initial=-1.00° final=-0.08° steps=1 dots=15 release=(642,1802)
+01:05:06.229 status shot sent, waiting for the board to settle
+01:05:06.654 status waiting for your turn
+01:05:29.791 status waiting for a steady board (0/4)
+01:05:29.975 status waiting for a steady board (1/4)
+01:05:30.255 status waiting for a steady board (2/4)
+01:05:30.421 status waiting for a steady board (3/4)
+01:05:30.594 status board changed, re-planning (6 s to relaxed mode)
+01:05:30.755 status shooting: Direct route
+01:05:30.758 SHOT from (539,1571) to (704,1597) shooting: Direct route
+01:05:31.969 AIM initial=-0.22° final=-0.22° steps=0 dots=11 release=(704,1597)
+01:05:31.981 status shot sent, waiting for the board to settle
+01:05:33.260 status waiting for your turn
+01:05:34.588 status waiting for a steady board (0/4)
+01:05:34.754 status waiting for a steady board (1/4)
+01:05:34.903 status waiting for a steady board (2/4)
+01:05:35.075 status waiting for a steady board (3/4)
+01:05:35.238 status board changed, re-planning (6 s to relaxed mode)
+01:05:35.620 status board changed, re-planning (5 s to relaxed mode)
+01:05:36.614 status board changed, re-planning (4 s to relaxed mode)
+01:05:37.612 status board changed, re-planning (3 s to relaxed mode)
+01:05:38.660 status board changed, re-planning (2 s to relaxed mode)
+01:05:39.620 status board changed, re-planning (1 s to relaxed mode)
+01:05:40.601 status board changed, re-planning (0 s to relaxed mode)
+01:05:41.615 status board changed, re-planning
+01:05:44.716 INCIDENT auto-stall {"status":"board changed, re-planning","turnMs":10129}
+01:05:55.509 status waiting for your turn
+01:06:15.516 status waiting for a steady board (0/4)
+01:06:15.699 status waiting for a steady board (1/4)
+01:06:15.881 status waiting for a steady board (2/4)
+01:06:16.031 status waiting for a steady board (3/4)
+01:06:16.199 status board changed, re-planning (6 s to relaxed mode)
+01:06:16.529 status board changed, re-planning (5 s to relaxed mode)
+01:06:17.526 status board changed, re-planning (4 s to relaxed mode)
+01:06:18.523 status board changed, re-planning (3 s to relaxed mode)
+01:06:19.666 status board changed, re-planning (2 s to relaxed mode)
+01:06:20.632 status board changed, re-planning (1 s to relaxed mode)
+01:06:21.627 status board changed, re-planning (0 s to relaxed mode)
+01:06:22.608 status board changed, re-planning
+01:06:25.678 INCIDENT auto-stall {"status":"board changed, re-planning","turnMs":10163}
+01:06:32.212 status waiting for the board

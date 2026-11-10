@@ -1,0 +1,38 @@
+02:37:12.036 status waiting for a steady board (0/4)
+02:37:12.212 status waiting for a steady board (1/4)
+02:37:12.411 status waiting for a steady board (2/4)
+02:37:12.594 status waiting for a steady board (3/4)
+02:37:12.844 status finding the best striker spot (★)
+02:37:13.209 status shooting: Open paths +1 (model)
+02:37:13.212 SHOT from (539,1571) to (599,1817) shooting: Open paths +1 (model)
+02:37:15.213 AIM initial=-1.37° final=0.05° steps=1 dots=14 release=(593,1818)
+02:37:15.234 status shot sent, waiting for the board to settle
+02:37:15.709 LINES turnMs=3677 blinks=0 jumps=0 hiddenMs=0 auto=true
+02:37:15.713 status waiting for your turn
+02:37:17.874 status waiting for a steady board (0/4)
+02:37:19.469 LINES turnMs=1594 blinks=0 jumps=0 hiddenMs=892 auto=true
+02:37:19.473 status waiting for your turn
+02:37:38.662 status waiting for a steady board (0/4)
+02:37:38.861 status waiting for a steady board (1/4)
+02:37:39.045 status waiting for a steady board (2/4)
+02:37:39.227 status waiting for a steady board (3/4)
+02:37:39.393 status moving striker to ★
+02:37:39.396 SLIDE from (539,2105) to (790,2105) moving striker to ★
+02:37:40.454 status moving striker
+02:37:40.509 status waiting for a steady board (0/2)
+02:37:40.512 SLIDE_LANDED start=539.4 target=744.9 finger=250.6 landed=744.6 off=-0.3
+02:37:40.687 status waiting for a steady board (1/2)
+02:37:40.888 status shooting: Direct route
+02:37:40.895 SHOT from (753,1573) to (773,1738) shooting: Direct route
+02:37:43.674 AIM initial=3.87° final=-0.19° steps=2 dots=17 release=(783,1737)
+02:37:43.692 status shot sent, waiting for the board to settle
+02:37:45.404 LINES turnMs=6741 blinks=1 jumps=0 hiddenMs=1421 auto=true
+02:37:45.410 status waiting for your turn
+02:38:06.777 status waiting for a steady board (0/4)
+02:38:06.978 status waiting for a steady board (1/4)
+02:38:07.154 status waiting for a steady board (2/4)
+02:38:07.320 status waiting for a steady board (3/4)
+02:38:07.486 status re-planning on the settled board
+02:38:17.116 INCIDENT auto-stall {"status":"re-planning on the settled board","turnMs":10341}
+02:38:28.274 LINES turnMs=21499 blinks=0 jumps=0 hiddenMs=946 auto=true
+02:38:28.279 status waiting for your turn
